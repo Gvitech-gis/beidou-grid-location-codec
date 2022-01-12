@@ -2,16 +2,19 @@ type LngLat = {
   lngDegree: number;
   lngMinute?: number;
   lngSecond?: number;
-  lngDirection?: string;
+  lngDirection?: LngDirection;
   latDegree: number;
   latMinute?: number;
   latSecond?: number;
-  latDirection?: string;
+  latDirection?: LatDirection;
 };
 
-enum HemisphereCode {
-  south = "S",
-  north = "N"
-}
+type DecodeOption = {
+  form: "decimal" | "dms";
+};
 
-export { LngLat, HemisphereCode };
+type LngDirection = "W" | "E";
+
+type LatDirection = "S" | "N";
+
+export { LngLat, DecodeOption, LngDirection, LatDirection };
