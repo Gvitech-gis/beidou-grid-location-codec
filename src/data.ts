@@ -12,4 +12,20 @@ const gridSizes1 = [
   [0.00048828125, 0.00048828125]
 ];
 
-export { gridSizes1 };
+const gridCount1 = [
+  [1, 1],
+  [60, 22],
+  [12, 8],
+  [2, 3],
+  [15, 10],
+  [15, 15],
+  [2, 2],
+  [8, 8],
+  [8, 8],
+  [8, 8],
+  [8, 8]
+];
+
+const codeLengthAtLevel = [1, 4, 6, 7, 9, 11, 12, 14, 16, 18, 20];
+
+export { gridSizes1, gridCount1, codeLengthAtLevel };

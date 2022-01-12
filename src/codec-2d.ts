@@ -1,5 +1,5 @@
-import { LngLat, DecodeOption } from "./type";
-import { gridSizes1 } from "./data";
+import { LngLat, DecodeOption, LngDirection, LatDirection } from "./type";
+import { gridSizes1, gridCount1, codeLengthAtLevel } from "./data";
 
 class Codec2D {
   static encode(lngLat: LngLat, level = 10): string {
@@ -212,24 +212,176 @@ class Codec2D {
     return [a * gridSizes1[n][0], b * gridSizes1[n][1]];
   }
 
-  static shorten(code: string, reference: string | LngLat): string {
-    if (typeof reference !== "string") {
-      return this.shorten(code, this.encode(reference));
-    } else {
-      return "";
+  static refer(
+    target: string | LngLat,
+    reference: string,
+    separator = "-"
+  ): string {
+    if (typeof target !== "string") {
+      return this.refer(this.encode(target), reference);
     }
+    if (target.length > 20) {
+      throw new Error("目标区域位置码错误");
+    }
+    if (reference.length > 20 || reference.length < 11) {
+      throw new Error("参考对象位置码错误");
+    }
+    // 只允许定位网格码最后两级的编码与目标区域位置码该级编码不相同
+    const level = this.getCodeLevel(reference);
+    const prefixT = target.substring(0, codeLengthAtLevel[level - 2]);
+    const prefixR = reference.substring(0, codeLengthAtLevel[level - 2]);
+    if (prefixR !== prefixT) {
+      throw new Error("不可进行参考");
+    }
+    // 判断最后四位是否在八格之内
+    const rCodeL_1 = this.getCodeAtLevel(reference, level - 1);
+    const tCodeL_1 = this.getCodeAtLevel(target, level - 1);
+    const rCodeL = this.getCodeAtLevel(reference, level);
+    const tCodeL = this.getCodeAtLevel(target, level);
+    const rRowColL_1 = this.getRowAndCol(rCodeL_1, level - 1);
+    const tRowColL_1 = this.getRowAndCol(tCodeL_1, level - 1);
+    const rRowColL = this.getRowAndCol(rCodeL, level);
+    const tRowColL = this.getRowAndCol(tCodeL, level);
+    const lngDiff =
+      (tRowColL_1[0] - rRowColL_1[0]) * gridCount1[level - 1][0] +
+      tRowColL[0] -
+      rRowColL[0];
+    const latDiff =
+      (tRowColL_1[1] - rRowColL_1[1]) * gridCount1[level - 1][1] +
+      tRowColL[1] -
+      rRowColL[1];
+    if (Math.abs(lngDiff) > 7 || Math.abs(latDiff) > 7) {
+      throw new Error("不可进行参考");
+    }
+    let c = reference + separator;
+    if (lngDiff >= 0) {
+      c += lngDiff;
+    } else {
+      c += String.fromCharCode(64 - lngDiff).toUpperCase();
+    }
+    if (latDiff >= 0) {
+      c += latDiff;
+    } else {
+      c += String.fromCharCode(64 - latDiff).toUpperCase();
+    }
+    // 获取半球信息
+    const directions = this.getDirections(reference);
+    const lngSign = directions[0] === "E" ? 1 : -1;
+    const latSign = directions[1] === "N" ? 1 : -1;
+    let a: number;
+    let b: number;
+    for (let i = level + 1; i <= 10; i++) {
+      if (i === 6) {
+        const code = Number(target.charAt(codeLengthAtLevel[i - 1]));
+        a = code % 2;
+        b = (code - a) / 2;
+      } else {
+        a = Number(target.charAt(codeLengthAtLevel[i - 1]));
+        b = Number(target.charAt(codeLengthAtLevel[i - 1] + 1));
+      }
+      c += separator;
+      if (lngSign === 1) {
+        c += a;
+      } else {
+        c += String.fromCharCode(65 + a).toUpperCase();
+      }
+      if (latSign === 1) {
+        c += b;
+      } else {
+        c += String.fromCharCode(65 + b).toUpperCase();
+      }
+    }
+    return c;
   }
 
-  static expand(
+  static deRefer(
     code: string,
     reference: string | LngLat,
     separator = "-"
   ): string {
     if (typeof reference !== "string") {
-      return this.expand(code, this.encode(reference), separator);
+      return this.deRefer(code, this.encode(reference), separator);
     } else {
       return "" + separator + "";
     }
+  }
+
+  private static getCodeLevel(code: string): number {
+    const level = codeLengthAtLevel.indexOf(code.length);
+    if (level === -1) {
+      throw new Error("编码长度错误!");
+    }
+    return level;
+  }
+
+  private static getCodeAtLevel(code: string, level: number) {
+    if (level === 0) {
+      return code.charAt(0);
+    }
+    return code.substring(
+      codeLengthAtLevel[level - 1],
+      codeLengthAtLevel[level]
+    );
+  }
+
+  private static getRowAndCol(
+    codeFragment: string,
+    level: number
+  ): [number, number] {
+    if (
+      codeFragment.length !==
+      codeLengthAtLevel[level] - codeLengthAtLevel[level - 1]
+    ) {
+      throw new Error("编码片段长度错误!");
+    }
+    let lng: number;
+    let lat: number;
+    switch (level) {
+      case 0:
+        return [0, 0];
+      case 1:
+        lng = Number(codeFragment.substring(0, 2));
+        lat = codeFragment.charCodeAt(2) - 65;
+        break;
+      case 2:
+      case 4:
+      case 5:
+      case 7:
+      case 8:
+      case 9:
+      case 10:
+        lng = parseInt(codeFragment.charAt(0), 16);
+        lat = parseInt(codeFragment.charAt(1), 16);
+        break;
+      case 3:
+      case 6: {
+        const n = Number(codeFragment);
+        lng = n % 2;
+        lat = (n - lng) / 2;
+        break;
+      }
+      default:
+        throw new Error("层级错误!");
+    }
+    this.checkCodeRange(lng, lat, level);
+    return [lng, lat];
+  }
+
+  private static checkCodeRange(lng: number, lat: number, level: number) {
+    if (
+      lng > gridCount1[level][0] - 1 ||
+      lng < 0 ||
+      lat < 0 ||
+      lat > gridCount1[level][1] - 1
+    ) {
+      throw new Error("位置码错误");
+    }
+  }
+
+  private static getDirections(code: string): [LngDirection, LatDirection] {
+    const latDir = code.charAt(0) === "N" ? "N" : "S";
+    const lngDir = Number(code.substring(1, 3)) >= 31 ? "E" : "W";
+    return [lngDir, latDir];
   }
 }
 
