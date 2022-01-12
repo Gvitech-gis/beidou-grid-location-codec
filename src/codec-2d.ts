@@ -212,6 +212,13 @@ class Codec2D {
     return [a * gridSizes1[n][0], b * gridSizes1[n][1]];
   }
 
+  /**
+   *
+   * @param target 目标区域位置
+   * @param reference 参考网格位置码
+   * @param separator 分隔符
+   * @returns 参考网格位置码
+   */
   static refer(
     target: string | LngLat,
     reference: string,
@@ -226,26 +233,39 @@ class Codec2D {
     if (reference.length > 20 || reference.length < 11) {
       throw new Error("参考对象位置码错误");
     }
+    // 防止目标位置码没有参考位置码长
+    target = target.padEnd(reference.length, "0");
     // 只允许定位网格码最后两级的编码与目标区域位置码该级编码不相同
+    // 原因：两个位置，倒数第二级不相同，但是倒数第一级的网格相邻是有可能的
     const level = this.getCodeLevel(reference);
     const prefixT = target.substring(0, codeLengthAtLevel[level - 2]);
     const prefixR = reference.substring(0, codeLengthAtLevel[level - 2]);
     if (prefixR !== prefixT) {
       throw new Error("不可进行参考");
     }
-    // 判断最后四位是否在八格之内
+    // 判断最后两级是否在八格之内
+    // 参考位置第level-1级代码
     const rCodeL_1 = this.getCodeAtLevel(reference, level - 1);
+    // 目标位置第level-1级代码
     const tCodeL_1 = this.getCodeAtLevel(target, level - 1);
+    // 参考位置第level级代码
     const rCodeL = this.getCodeAtLevel(reference, level);
+    // 目标位置第level级代码
     const tCodeL = this.getCodeAtLevel(target, level);
+    // 参考位置第level-1级行列号
     const rRowColL_1 = this.getRowAndCol(rCodeL_1, level - 1);
+    // 目标位置第level-1级行列号
     const tRowColL_1 = this.getRowAndCol(tCodeL_1, level - 1);
+    // 参考位置第level级行列号
     const rRowColL = this.getRowAndCol(rCodeL, level);
+    // 目标位置第level级行列号
     const tRowColL = this.getRowAndCol(tCodeL, level);
+    // 列差
     const lngDiff =
       (tRowColL_1[0] - rRowColL_1[0]) * gridCount1[level - 1][0] +
       tRowColL[0] -
       rRowColL[0];
+    // 行差
     const latDiff =
       (tRowColL_1[1] - rRowColL_1[1]) * gridCount1[level - 1][1] +
       tRowColL[1] -
@@ -254,6 +274,7 @@ class Codec2D {
       throw new Error("不可进行参考");
     }
     let c = reference + separator;
+    // 对第level进行参照
     if (lngDiff >= 0) {
       c += lngDiff;
     } else {
@@ -268,9 +289,12 @@ class Codec2D {
     const directions = this.getDirections(reference);
     const lngSign = directions[0] === "E" ? 1 : -1;
     const latSign = directions[1] === "N" ? 1 : -1;
+    // a为列号，b为行号
     let a: number;
     let b: number;
-    for (let i = level + 1; i <= 10; i++) {
+    const tLevel = this.getCodeLevel(target);
+    // 对剩余的层级进行参照
+    for (let i = level + 1; i <= tLevel; i++) {
       if (i === 6) {
         const code = Number(target.charAt(codeLengthAtLevel[i - 1]));
         a = code % 2;
@@ -280,6 +304,7 @@ class Codec2D {
         b = Number(target.charAt(codeLengthAtLevel[i - 1] + 1));
       }
       c += separator;
+      // 如果符号为负，需要取字母
       if (lngSign === 1) {
         c += a;
       } else {
@@ -306,6 +331,11 @@ class Codec2D {
     }
   }
 
+  /**
+   * 获取一个位置码的级别
+   * @param code 位置码
+   * @returns 级别
+   */
   private static getCodeLevel(code: string): number {
     const level = codeLengthAtLevel.indexOf(code.length);
     if (level === -1) {
@@ -314,6 +344,12 @@ class Codec2D {
     return level;
   }
 
+  /**
+   *
+   * @param code 位置码
+   * @param level 级别
+   * @returns 该级别的位置码片段
+   */
   private static getCodeAtLevel(code: string, level: number) {
     if (level === 0) {
       return code.charAt(0);
@@ -324,6 +360,12 @@ class Codec2D {
     );
   }
 
+  /**
+   *
+   * @param codeFragment 某级别位置码片段
+   * @param level 级别
+   * @returns [lng, lat] => [列号, 行号]
+   */
   private static getRowAndCol(
     codeFragment: string,
     level: number
@@ -367,6 +409,12 @@ class Codec2D {
     return [lng, lat];
   }
 
+  /**
+   *
+   * @param lng 列号
+   * @param lat 行号
+   * @param level 级别
+   */
   private static checkCodeRange(lng: number, lat: number, level: number) {
     if (
       lng > gridCount1[level][0] - 1 ||
@@ -378,6 +426,11 @@ class Codec2D {
     }
   }
 
+  /**
+   *
+   * @param code 位置码
+   * @returns [lngDir, latDir] => [经度方向, 纬度方向]
+   */
   private static getDirections(code: string): [LngDirection, LatDirection] {
     const latDir = code.charAt(0) === "N" ? "N" : "S";
     const lngDir = Number(code.substring(1, 3)) >= 31 ? "E" : "W";

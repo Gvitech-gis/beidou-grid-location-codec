@@ -42,4 +42,6 @@ console.log(Codec2D.refer("N50J47539b8255346152", "N50J4754909"));
 
 console.log(Codec2D.refer("N50J47539b8255346152", "N50J47539b82"));
 
+console.log(Codec2D.refer("N50J47539b82", "N50J47539b8"));
+
 export { Codec2D };
