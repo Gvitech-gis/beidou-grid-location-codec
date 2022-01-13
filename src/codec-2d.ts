@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { LngLat, DecodeOption, LngDirection, LatDirection } from "./type";
 import { gridSizes1, gridCount1, codeLengthAtLevel } from "./data";
 
@@ -123,8 +124,7 @@ class Codec2D {
     // 半球方向
     const directions = this.getDirections(code);
     // 南北半球标识
-    const latSign = directions[1] === "N" ? 1 : -1;
-    const lngSign = directions[0] === "E" ? 1 : -1;
+    const [latSign, lngSign] = this.getSigns(directions);
     // 用于累加结果
     let lng = 0;
     let lat = 0;
@@ -200,12 +200,20 @@ class Codec2D {
     const tLngLat = this.decode(target);
     const rLngLat = this.decode(reference);
     const level = this.getCodeLevel(reference);
+    // 获取半球信息
+    const directions = this.getDirections(reference);
+    const [latSign, lngSign] = this.getSigns(directions);
+    // 乘上符号是为了变换到东北半球计算
     // 列差
     const lngDiff =
-      ((tLngLat.lngDegree - rLngLat.lngDegree) * 3600) / gridSizes1[level][0];
+      (((tLngLat.lngDegree - rLngLat.lngDegree) * 3600) /
+        gridSizes1[level][0]) *
+      lngSign;
     // 行差
     const latDiff =
-      ((tLngLat.latDegree - rLngLat.latDegree) * 3600) / gridSizes1[level][1];
+      (((tLngLat.latDegree - rLngLat.latDegree) * 3600) /
+        gridSizes1[level][1]) *
+      latSign;
     if (Math.abs(lngDiff) >= 8 || Math.abs(latDiff) >= 8) {
       throw new Error("不可进行参考");
     }
@@ -221,10 +229,6 @@ class Codec2D {
     } else {
       c += String.fromCharCode(65 + Math.floor(-latDiff)).toUpperCase();
     }
-    // 获取半球信息
-    const directions = this.getDirections(reference);
-    const lngSign = directions[0] === "E" ? 1 : -1;
-    const latSign = directions[1] === "N" ? 1 : -1;
     // a为列号，b为行号
     let a: number;
     let b: number;
@@ -241,15 +245,15 @@ class Codec2D {
       }
       c += separator;
       // 如果符号为负，需要取字母
-      if (lngSign === 1) {
+      if (lngSign === 1 || a === 0) {
         c += a;
       } else {
-        c += String.fromCharCode(65 + a).toUpperCase();
+        c += String.fromCharCode(64 + a).toUpperCase();
       }
-      if (latSign === 1) {
+      if (latSign === 1 || b === 0) {
         c += b;
       } else {
-        c += String.fromCharCode(65 + b).toUpperCase();
+        c += String.fromCharCode(64 + b).toUpperCase();
       }
     }
     return c;
@@ -260,7 +264,51 @@ class Codec2D {
     if (split.length === 1) {
       return code;
     }
-    return "";
+    const rLevel = this.getCodeLevel(split[0]);
+    const tLevel = rLevel + split.length - 2;
+    // 采用度分秒可以避免计算误差
+    let tLngLat = this.decode(split[0], { form: "dms" });
+    const [latSign, lngSign] = this.getSigns([
+      tLngLat.lngDirection!,
+      tLngLat.latDirection!
+    ]);
+    for (let i = rLevel; i <= tLevel; i++) {
+      tLngLat = this.deReferN(
+        tLngLat,
+        split[1 + i - rLevel],
+        i,
+        lngSign,
+        latSign
+      );
+    }
+    const result = this.encode(tLngLat, tLevel);
+    return result;
+  }
+
+  private static deReferN(
+    lngLat: LngLat,
+    codeFragment: string,
+    level: number,
+    lngSign: number,
+    latSign: number
+  ): LngLat {
+    const a = codeFragment.charCodeAt(0);
+    const b = codeFragment.charCodeAt(1);
+    const ascii_0 = "0".charCodeAt(0);
+    const ascii_7 = "7".charCodeAt(0);
+    const ascii_A = "A".charCodeAt(0);
+    const ascii_G = "G".charCodeAt(0);
+    if (a >= ascii_0 && a <= ascii_7) {
+      lngLat.lngSecond! += (a - ascii_0) * gridSizes1[level][0] * lngSign;
+    } else if (a >= ascii_A && a <= ascii_G) {
+      lngLat.lngSecond! -= (a - ascii_A + 1) * gridSizes1[level][0] * lngSign;
+    }
+    if (b >= ascii_0 && b <= ascii_7) {
+      lngLat.latSecond! += (b - ascii_0) * gridSizes1[level][1] * latSign;
+    } else if (b >= ascii_A && b <= ascii_G) {
+      lngLat.latSecond! -= (b - ascii_A + 1) * gridSizes1[level][1] * latSign;
+    }
+    return lngLat;
   }
 
   /**
@@ -371,6 +419,10 @@ class Codec2D {
     const latDir = code.charAt(0) === "N" ? "N" : "S";
     const lngDir = Number(code.substring(1, 3)) >= 31 ? "E" : "W";
     return [lngDir, latDir];
+  }
+
+  private static getSigns(directions: [LngDirection, LatDirection]) {
+    return [directions[0] === "E" ? 1 : -1, directions[1] === "N" ? 1 : -1];
   }
 }
 
