@@ -227,63 +227,29 @@ class Codec2D {
     if (typeof target !== "string") {
       return this.refer(this.encode(target), reference);
     }
-    if (target.length > 20) {
-      throw new Error("目标区域位置码错误");
-    }
-    if (reference.length > 20 || reference.length < 11) {
-      throw new Error("参考对象位置码错误");
-    }
-    // 防止目标位置码没有参考位置码长
-    target = target.padEnd(reference.length, "0");
-    // 只允许定位网格码最后两级的编码与目标区域位置码该级编码不相同
-    // 原因：两个位置，倒数第二级不相同，但是倒数第一级的网格相邻是有可能的
+    const tLngLat = this.decode(target);
+    const rLngLat = this.decode(reference);
     const level = this.getCodeLevel(reference);
-    const prefixT = target.substring(0, codeLengthAtLevel[level - 2]);
-    const prefixR = reference.substring(0, codeLengthAtLevel[level - 2]);
-    if (prefixR !== prefixT) {
-      throw new Error("不可进行参考");
-    }
-    // 判断最后两级是否在八格之内
-    // 参考位置第level-1级代码
-    const rCodeL_1 = this.getCodeAtLevel(reference, level - 1);
-    // 目标位置第level-1级代码
-    const tCodeL_1 = this.getCodeAtLevel(target, level - 1);
-    // 参考位置第level级代码
-    const rCodeL = this.getCodeAtLevel(reference, level);
-    // 目标位置第level级代码
-    const tCodeL = this.getCodeAtLevel(target, level);
-    // 参考位置第level-1级行列号
-    const rRowColL_1 = this.getRowAndCol(rCodeL_1, level - 1);
-    // 目标位置第level-1级行列号
-    const tRowColL_1 = this.getRowAndCol(tCodeL_1, level - 1);
-    // 参考位置第level级行列号
-    const rRowColL = this.getRowAndCol(rCodeL, level);
-    // 目标位置第level级行列号
-    const tRowColL = this.getRowAndCol(tCodeL, level);
     // 列差
     const lngDiff =
-      (tRowColL_1[0] - rRowColL_1[0]) * gridCount1[level - 1][0] +
-      tRowColL[0] -
-      rRowColL[0];
+      ((tLngLat.lngDegree - rLngLat.lngDegree) * 3600) / gridSizes1[level][0];
     // 行差
     const latDiff =
-      (tRowColL_1[1] - rRowColL_1[1]) * gridCount1[level - 1][1] +
-      tRowColL[1] -
-      rRowColL[1];
-    if (Math.abs(lngDiff) > 7 || Math.abs(latDiff) > 7) {
+      ((tLngLat.latDegree - rLngLat.latDegree) * 3600) / gridSizes1[level][1];
+    if (Math.abs(lngDiff) >= 8 || Math.abs(latDiff) >= 8) {
       throw new Error("不可进行参考");
     }
     let c = reference + separator;
     // 对第level进行参照
     if (lngDiff >= 0) {
-      c += lngDiff;
+      c += Math.floor(lngDiff);
     } else {
-      c += String.fromCharCode(64 - lngDiff).toUpperCase();
+      c += String.fromCharCode(65 + Math.floor(-lngDiff)).toUpperCase();
     }
     if (latDiff >= 0) {
-      c += latDiff;
+      c += Math.floor(latDiff);
     } else {
-      c += String.fromCharCode(64 - latDiff).toUpperCase();
+      c += String.fromCharCode(65 + Math.floor(-latDiff)).toUpperCase();
     }
     // 获取半球信息
     const directions = this.getDirections(reference);
@@ -319,16 +285,12 @@ class Codec2D {
     return c;
   }
 
-  static deRefer(
-    code: string,
-    reference: string | LngLat,
-    separator = "-"
-  ): string {
-    if (typeof reference !== "string") {
-      return this.deRefer(code, this.encode(reference), separator);
-    } else {
-      return "" + separator + "";
+  static deRefer(code: string, separator = "-"): string {
+    const split = code.split(separator);
+    if (split.length === 1) {
+      return code;
     }
+    return "";
   }
 
   /**
