@@ -259,15 +259,24 @@ class Codec2D {
     return c;
   }
 
+  /**
+   * 还原斗参考网格位置码
+   * @param code 北斗参考网格位置码
+   * @param separator 分隔符，默认是"-"
+   * @returns 还原后的北斗参考网格位置码
+   */
   static deRefer(code: string, separator = "-"): string {
     const split = code.split(separator);
     if (split.length === 1) {
       return code;
     }
+    // 参考位置网格等级
     const rLevel = this.getCodeLevel(split[0]);
+    // 目标位置网格等级
     const tLevel = rLevel + split.length - 2;
     // 采用度分秒可以避免计算误差
     let tLngLat = this.decode(split[0], { form: "dms" });
+    // 获取半球信息
     const [latSign, lngSign] = this.getSigns([
       tLngLat.lngDirection!,
       tLngLat.latDirection!
@@ -281,10 +290,20 @@ class Codec2D {
         latSign
       );
     }
+    // 重新编码
     const result = this.encode(tLngLat, tLevel);
     return result;
   }
 
+  /**
+   * 还原当前级别网格的经纬度
+   * @param lngLat 上一级的经纬度坐标
+   * @param codeFragment 斗参考网格位置码片段
+   * @param level 当前层级
+   * @param lngSign 经度方向符号
+   * @param latSign 纬度方向符号
+   * @returns 当前级的经纬度坐标
+   */
   private static deReferN(
     lngLat: LngLat,
     codeFragment: string,
@@ -294,10 +313,12 @@ class Codec2D {
   ): LngLat {
     const a = codeFragment.charCodeAt(0);
     const b = codeFragment.charCodeAt(1);
+    // 获取编码的ascii码范围
     const ascii_0 = "0".charCodeAt(0);
     const ascii_7 = "7".charCodeAt(0);
     const ascii_A = "A".charCodeAt(0);
     const ascii_G = "G".charCodeAt(0);
+    // * sign 的目的是转换到东北半球计算
     if (a >= ascii_0 && a <= ascii_7) {
       lngLat.lngSecond! += (a - ascii_0) * gridSizes1[level][0] * lngSign;
     } else if (a >= ascii_A && a <= ascii_G) {
