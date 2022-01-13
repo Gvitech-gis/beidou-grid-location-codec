@@ -333,6 +333,23 @@ class Codec2D {
   }
 
   /**
+   * 缩短一个北斗二维网格编码
+   * @param code 北斗二维网格编码
+   * @param level 目标层级
+   * @returns 缩短后的编码
+   */
+  static shorten(code: string, level: number): string {
+    if (level < 1 || level > 10) {
+      throw new Error("层级错误");
+    }
+    const nowLevel = this.getCodeLevel(code);
+    if (nowLevel <= level) {
+      return code;
+    }
+    return code.substring(0, codeLengthAtLevel[level]);
+  }
+
+  /**
    * 获取一个位置码的最大级别
    * @param code 位置码
    * @returns 级别
