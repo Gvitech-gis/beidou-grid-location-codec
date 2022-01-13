@@ -106,28 +106,18 @@ class Codec2D {
     code: string,
     decodeOption: DecodeOption = { form: "decimal" }
   ): LngLat {
-    if (code.length < 4 || code.length > 20) {
-      throw new Error("位置码长度有误");
-    }
-    if (code.charAt(0) !== "N" && code.charAt(0) !== "S") {
-      throw new Error("位置码错误");
-    }
-    // 如果不足20位就用0补全
-    code = code.padEnd(20, "0");
+    // 层级
+    const level = this.getCodeLevel(code);
+    // 方向
+    const directions = this.getDirections(code);
     // 南北半球标识
-    const latSign = code.charAt(0) === "N" ? 1 : -1;
-    // 第一级
-    const lngCode1 = Number(code.substring(1, 3));
-    const b1 = code.charCodeAt(3) - 65;
-    if (lngCode1 > 60 || lngCode1 < 0 || b1 < 0 || b1 > 21) {
-      throw new Error("位置码错误");
-    }
-    const lngSign = lngCode1 >= 31 ? 1 : -1;
-    const a1 = lngCode1 >= 31 ? lngCode1 - 31 : 30 - lngCode1;
-    let lng = a1 * gridSizes1[1][0];
-    let lat = b1 * gridSizes1[1][1];
-    // 对2~10级进行解码
-    for (let i = 2; i <= 10; i++) {
+    const latSign = directions[1] === "N" ? 1 : -1;
+    const lngSign = directions[0] === "E" ? 1 : -1;
+    // 用于累加结果
+    let lng = 0;
+    let lat = 0;
+    // 对 1 ~ level 级进行解码
+    for (let i = 1; i <= level; i++) {
       const pair = this.decodeN(code, i);
       lng += pair[0];
       lat += pair[1];
@@ -161,55 +151,16 @@ class Codec2D {
     return result;
   }
 
-  static decodeN(code: string, n: number): [number, number] {
-    if (n < 2 || n > 10) {
+  private static decodeN(code: string, n: number): [number, number] {
+    if (n < 1 || n > 10) {
       throw new Error("层级错误");
     }
-    // a为第n级的网格列号，b为行号，temp为临时变量，用于计算
-    let a = 0;
-    let b = 0;
-    let temp: number;
-    switch (n) {
-      case 2:
-        a = parseInt(code.charAt(4), 16);
-        b = parseInt(code.charAt(5));
-        if (a > 11 || b > 7) {
-          throw new Error("位置码错误");
-        }
-        break;
-      case 3:
-        temp = parseInt(code.charAt(6));
-        if (temp > 5) {
-          throw new Error("位置码错误");
-        }
-        a = temp % 2;
-        // JavaScript除法有余数
-        b = (temp - a) / 2;
-        break;
-      case 4:
-      case 5:
-        a = parseInt(code.charAt(7 + (n - 4) * 2), 16);
-        b = parseInt(code.charAt(8 + (n - 4) * 2), 16);
-        if (a > 14 || b > 14 || (n == 4 && b > 9)) {
-          throw new Error("位置码错误");
-        }
-        break;
-      case 6:
-        temp = parseInt(code.charAt(11));
-        if (temp > 3) {
-          throw new Error("位置码错误");
-        }
-        a = temp % 2;
-        b = (temp - a) / 2;
-        break;
-      default:
-        a = parseInt(code.charAt(12 + (n - 7) * 2));
-        b = parseInt(code.charAt(13 + (n - 7) * 2));
-        if (a > 7 || b > 7) {
-          throw new Error("位置码错误");
-        }
+    const rowCol = this.getRowAndCol(this.getCodeAtLevel(code, n), n);
+    // 如果是第一级，需要特殊处理
+    if (n === 1) {
+      rowCol[0] = rowCol[0] >= 31 ? rowCol[0] - 31 : 30 - rowCol[0];
     }
-    return [a * gridSizes1[n][0], b * gridSizes1[n][1]];
+    return [rowCol[0] * gridSizes1[n][0], rowCol[1] * gridSizes1[n][1]];
   }
 
   /**
@@ -294,7 +245,7 @@ class Codec2D {
   }
 
   /**
-   * 获取一个位置码的级别
+   * 获取一个位置码的最大级别
    * @param code 位置码
    * @returns 级别
    */
@@ -307,7 +258,7 @@ class Codec2D {
   }
 
   /**
-   *
+   * 获取某一级别的代码片段
    * @param code 位置码
    * @param level 级别
    * @returns 该级别的位置码片段
@@ -323,7 +274,7 @@ class Codec2D {
   }
 
   /**
-   *
+   * 获取某一级别的网格的行列号
    * @param codeFragment 某级别位置码片段
    * @param level 级别
    * @returns [lng, lat] => [列号, 行号]
@@ -367,17 +318,21 @@ class Codec2D {
       default:
         throw new Error("层级错误!");
     }
-    this.checkCodeRange(lng, lat, level);
+    this.checkCodeFragmentRange(lng, lat, level);
     return [lng, lat];
   }
 
   /**
-   *
+   * 检查第level级代码片段范围是否合法
    * @param lng 列号
    * @param lat 行号
    * @param level 级别
    */
-  private static checkCodeRange(lng: number, lat: number, level: number) {
+  private static checkCodeFragmentRange(
+    lng: number,
+    lat: number,
+    level: number
+  ) {
     if (
       lng > gridCount1[level][0] - 1 ||
       lng < 0 ||
@@ -389,7 +344,7 @@ class Codec2D {
   }
 
   /**
-   *
+   * 获取位置码的半球信息：东南、东北、西南、西北
    * @param code 位置码
    * @returns [lngDir, latDir] => [经度方向, 纬度方向]
    */

@@ -30,18 +30,18 @@ import Codec2D from "./codec-2d";
 //   )
 // );
 
-// console.log(Codec2D.decode("N50J47539b8255346152"));
+console.log(Codec2D.decode("N50J47539b8255346152"));
 
-// console.log(Codec2D.decode("N50J47539b8255346152", { form: "dms" }));
+console.log(Codec2D.decode("N50J47539b8255346152", { form: "dms" }));
 
-// console.log(Codec2D.decode("S11J47539b8255346152", { form: "dms" }));
+console.log(Codec2D.decode("S11J47539b8255346152", { form: "dms" }));
 
 // console.log(Codec2D.refer("S11J47539B8255346152", "S11J47539B82553461"));
 
-console.log(Codec2D.refer("N50J47539b8255346152", "N50J4754909"));
+// console.log(Codec2D.refer("N50J47539b8255346152", "N50J4754909"));
 
-console.log(Codec2D.refer("N50J47539b8255346152", "N50J47539b82"));
+// console.log(Codec2D.refer("N50J47539b8255346152", "N50J47539b82"));
 
-console.log(Codec2D.refer("N50J47539b82", "N50J47539b8"));
+// console.log(Codec2D.refer("N50J47539b82", "N50J47539b8"));
 
-console.log(Codec2D.refer("N50J4750908", "N50J474E9E8"));
+// console.log(Codec2D.refer("N50J4750908", "N50J474E9E8"));
