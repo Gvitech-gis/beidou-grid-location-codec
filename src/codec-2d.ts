@@ -2,6 +2,12 @@ import { LngLat, DecodeOption, LngDirection, LatDirection } from "./type";
 import { gridSizes1, gridCount1, codeLengthAtLevel } from "./data";
 
 class Codec2D {
+  /**
+   * 对一个经纬度坐标编码
+   * @param lngLat 经纬度坐标，可以写小数形式（正负号表示方向），也可以写度分秒形式（均为正数，direction字段表示方向）
+   * @param level 要编码到第几级，默认为10
+   * @returns 北斗二维网格位置码
+   */
   static encode(lngLat: LngLat, level = 10): string {
     // 计算经度，换算成秒
     let lngInSec =
@@ -102,13 +108,19 @@ class Codec2D {
     }
   }
 
+  /**
+   * 对北斗二维网格位置码解码
+   * @param code 需要解码的北斗二维网格位置码
+   * @param decodeOption 解码选项，可不传
+   * @returns 经纬度坐标
+   */
   static decode(
     code: string,
     decodeOption: DecodeOption = { form: "decimal" }
   ): LngLat {
     // 层级
     const level = this.getCodeLevel(code);
-    // 方向
+    // 半球方向
     const directions = this.getDirections(code);
     // 南北半球标识
     const latSign = directions[1] === "N" ? 1 : -1;
@@ -151,10 +163,17 @@ class Codec2D {
     return result;
   }
 
+  /**
+   * 对第n级进行解码
+   * @param code 北斗二维网格位置码
+   * @param n 层级
+   * @returns [number, number] 该层级的经纬度偏移量（单位秒，且非负）
+   */
   private static decodeN(code: string, n: number): [number, number] {
     if (n < 1 || n > 10) {
       throw new Error("层级错误");
     }
+    // 获取行列号
     const rowCol = this.getRowAndCol(this.getCodeAtLevel(code, n), n);
     // 如果是第一级，需要特殊处理
     if (n === 1) {
