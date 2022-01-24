@@ -1,3 +1,3 @@
 import Codec2D from "./codec-2d";
-
-export { Codec2D };
+import { LngLat, DecodeOption, LngDirection, LatDirection } from "./type";
+export { Codec2D, LngLat, DecodeOption, LngDirection, LatDirection };

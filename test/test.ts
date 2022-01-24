@@ -1,5 +1,4 @@
-import Codec2D from "./codec-2d";
-import { LngLat } from "./type";
+import { LngLat, Codec2D } from "../dist";
 
 // console.log(
 //   Codec2D.encode(
