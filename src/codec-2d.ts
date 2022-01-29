@@ -27,6 +27,9 @@ class Codec2D {
       latN = 0;
     // 存储结果
     let resCode = "";
+    if (Math.abs(lngLat.latDegree) >= 88) {
+      throw new Error("暂不支持两级地区(纬度大于等于88°)编码");
+    }
     for (let i = 0; i <= level; i++) {
       const t = this.encodeN(lngInSec, latInSec, lngN, latN, i);
       lngN += t[0];
@@ -177,6 +180,9 @@ class Codec2D {
     const rowCol = this.getRowAndCol(this.getCodeAtLevel(code, n), n);
     // 如果是第一级，需要特殊处理
     if (n === 1) {
+      if (rowCol[0] === 0) {
+        throw new Error("暂不支持解码两极地区(纬度大于等于88°)编码");
+      }
       rowCol[0] = rowCol[0] >= 31 ? rowCol[0] - 31 : 30 - rowCol[0];
     }
     return [rowCol[0] * gridSizes1[n][0], rowCol[1] * gridSizes1[n][1]];
