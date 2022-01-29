@@ -9,6 +9,8 @@ type LngLat = {
   latDirection?: LatDirection;
 };
 
+type LngLatEle = LngLat & { elevation: number };
+
 type DecodeOption = {
   form: "decimal" | "dms";
 };
@@ -17,4 +19,4 @@ type LngDirection = "W" | "E";
 
 type LatDirection = "S" | "N";
 
-export { LngLat, DecodeOption, LngDirection, LatDirection };
+export { LngLat, DecodeOption, LngDirection, LatDirection, LngLatEle };

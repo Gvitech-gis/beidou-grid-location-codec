@@ -28,4 +28,19 @@ const gridCount1 = [
 
 const codeLengthAtLevel = [1, 4, 6, 7, 9, 11, 12, 14, 16, 18, 20];
 
-export { gridSizes1, gridCount1, codeLengthAtLevel };
+const elevationParams = [
+  [1, 2],
+  // 十进制即可得到目标结果
+  [6, 10],
+  [3, 8],
+  [1, 2],
+  [4, 16],
+  [4, 16],
+  [1, 2],
+  [3, 8],
+  [3, 8],
+  [3, 8],
+  [3, 8]
+];
+
+export { gridSizes1, gridCount1, codeLengthAtLevel, elevationParams };
