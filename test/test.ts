@@ -1,4 +1,4 @@
-import { LngLat, Codec2D } from "../dist";
+import { LngLat, Codec2D, Codec3D, LngLatEle } from "../dist";
 
 // console.log(
 //   Codec2D.encode(
@@ -150,3 +150,20 @@ console.log("需要缩短的编码:", codeToBeShorten);
 for (let i = 9; i >= 2; i--) {
   console.log(`缩短到第${i}级的编码是:`, Codec2D.shorten(codeToBeShorten, i));
 }
+
+console.log("---------------------------------------");
+console.log("北斗三维网格位置码");
+const h = 8848.86;
+const code = Codec3D.encodeElevation(h);
+console.log("珠穆朗玛峰高程方向编码", code);
+console.log("珠穆朗玛峰高程方向编码解码结果", Codec3D.decodeElevation(code));
+const zmlmf: LngLatEle = {
+  lngDegree: 86.9,
+  latDegree: 27.9,
+  elevation: h
+};
+console.log("珠穆朗玛峰大地坐标", zmlmf);
+const code3d = Codec3D.encode(zmlmf);
+console.log("珠穆朗玛峰北斗三维网格位置码", code3d);
+console.log("珠穆朗玛峰北斗三维网格位置码解码结果", Codec3D.decode(code3d));
+console.log();
