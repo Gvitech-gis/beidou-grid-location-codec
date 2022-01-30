@@ -8,9 +8,12 @@ declare type LngLat = {
   latSecond?: number;
   latDirection?: LatDirection;
 };
+declare type LngLatEle = LngLat & {
+  elevation: number;
+};
 declare type DecodeOption = {
   form: "decimal" | "dms";
 };
 declare type LngDirection = "W" | "E";
 declare type LatDirection = "S" | "N";
-export { LngLat, DecodeOption, LngDirection, LatDirection };
+export { LngLat, DecodeOption, LngDirection, LatDirection, LngLatEle };

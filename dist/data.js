@@ -1,6 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.codeLengthAtLevel = exports.gridCount1 = exports.gridSizes1 = void 0;
+exports.elevationParams =
+  exports.codeLengthAtLevel =
+  exports.gridCount1 =
+  exports.gridSizes1 =
+    void 0;
 const gridSizes1 = [
   [1, 1],
   [21600, 14400],
@@ -31,4 +35,19 @@ const gridCount1 = [
 exports.gridCount1 = gridCount1;
 const codeLengthAtLevel = [1, 4, 6, 7, 9, 11, 12, 14, 16, 18, 20];
 exports.codeLengthAtLevel = codeLengthAtLevel;
+const elevationParams = [
+  [1, 2],
+  // 十进制即可得到目标结果
+  [6, 10],
+  [3, 8],
+  [1, 2],
+  [4, 16],
+  [4, 16],
+  [1, 2],
+  [3, 8],
+  [3, 8],
+  [3, 8],
+  [3, 8]
+];
+exports.elevationParams = elevationParams;
 //# sourceMappingURL=data.js.map
