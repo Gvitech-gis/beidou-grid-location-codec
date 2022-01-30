@@ -4,7 +4,7 @@ import { elevationParams } from "./data";
 
 class Codec3D {
   /**
-   *
+   * 对大地坐标进行编码
    * @param lngLatEle 大地坐标，类型为 LngLat & number
    * @param r 地球长半轴，默认取6378137m
    * @returns 32位的北斗三维网格位置码
@@ -18,7 +18,7 @@ class Codec3D {
   }
 
   /**
-   *
+   * 对高程进行编码
    * @param elevation 高程，单位米
    * @param r 地球长半轴，默认取6378137m
    * @param level 编码层级，默认10
@@ -26,10 +26,12 @@ class Codec3D {
    */
   static encodeElevation(elevation: number, r = 6378137, level = 10) {
     // 计算θ=1/2048″时的大地方向网格计数
-    const n =
-      (1 / 2048 / 3600) *
-      (Math.log((elevation + r) / r) /
-        Math.log(1 + (1 / 2048) * (Math.PI / 180)));
+    const theta = 1 / 2048 / 3600;
+    const theta0 = 1;
+    const n = Math.floor(
+      (theta0 / theta) *
+        (Math.log((elevation + r) / r) / Math.log(1 + theta0 * (Math.PI / 180)))
+    );
     // js/ts的二进制是有正负号的。console.log((-10).toString(2)); => -1010
     // 单独处理符号位
     const signCode = n < 0 ? "1" : "0";
@@ -42,7 +44,8 @@ class Codec3D {
     let index = 0;
     for (let i = 0; i <= level; i++) {
       // 截取字符串
-      let codeI = Number(nb.substring(index, (index += elevationParams[i][0])))
+      const str = nb.substring(index, (index += elevationParams[i][0]));
+      let codeI = parseInt(str, 2)
         // 进制转化
         .toString(elevationParams[i][1])
         // 转换为大写(如果是字母)
@@ -57,7 +60,7 @@ class Codec3D {
   }
 
   /**
-   *
+   * 对32位北斗三维网格位置码解码
    * @param code 32位北斗三位网格位置码
    * @param decodeOption 解码选项
    * @param r 地球长半轴，默认取6378137m
@@ -81,7 +84,7 @@ class Codec3D {
   }
 
   /**
-   *
+   * 对高程方向编码解码
    * @param codeEle 高程方向编码
    * @param r 地球长半轴，默认取6378137m
    * @returns 高程，单位米
