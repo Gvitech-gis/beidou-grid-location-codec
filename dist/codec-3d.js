@@ -40,7 +40,7 @@ class Codec3D {
     // 单独处理符号位
     const signCode = n < 0 ? "1" : "0";
     // 补位31位
-    let nb = n.toString(2).padStart(31, "0");
+    let nb = Math.abs(n).toString(2).padStart(31, "0");
     nb = signCode + nb;
     // 高程方向编码结果
     let codeEle = "";

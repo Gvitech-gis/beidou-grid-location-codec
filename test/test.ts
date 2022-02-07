@@ -1,4 +1,5 @@
-import { LngLat, Codec2D, Codec3D, LngLatEle } from "../dist";
+import { Codec2D, Codec3D } from "../dist";
+import type { LngLat, LngLatEle } from "../dist";
 
 // console.log(
 //   Codec2D.encode(
@@ -166,4 +167,11 @@ console.log("珠穆朗玛峰大地坐标", zmlmf);
 const code3d = Codec3D.encode(zmlmf);
 console.log("珠穆朗玛峰北斗三维网格位置码", code3d);
 console.log("珠穆朗玛峰北斗三维网格位置码解码结果", Codec3D.decode(code3d));
-console.log();
+console.log("-------------------");
+const ugH = -11034;
+const ugCode = Codec3D.encodeElevation(ugH);
+console.log("马里亚纳海沟高程方向编码", ugCode);
+console.log(
+  "马里亚纳海沟高程方向编码解码结果",
+  Codec3D.decodeElevation(ugCode)
+);
