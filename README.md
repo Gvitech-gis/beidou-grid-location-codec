@@ -13,12 +13,8 @@ $ npm i beidou-grid-location-codec
 Import two main classes(`Codec2D` and `Codec3D`) and some types(`LngLat` and `LngLatEle`).
 
 ```typescript
-import {
-  LngLat,
-  Codec2D,
-  Codec3D,
-  LngLatEle
-} from "beidou-grid-location-codec";
+import { Codec2D, Codec3D } from "beidou-grid-location-codec";
+import type { LngLat, LngLatEle } from "beidou-grid-location-codec";
 ```
 
 ### LngLat
