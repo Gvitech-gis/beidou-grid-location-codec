@@ -72,7 +72,13 @@ declare class Codec2D {
    * @param code 位置码
    * @returns 级别
    */
-  private static getCodeLevel;
+  static getCodeLevel(code: string): number;
+  /**
+   * 获取一个参照位置网格的可参照范围
+   * @param code 参照位置网格编码，必须大于等于5级
+   * @returns [LngLat, LngLat]，西南角和东北角坐标
+   */
+  static getReferRange(code: string): [LngLat, LngLat];
   /**
    * 获取某一级别的代码片段
    * @param code 位置码
@@ -101,5 +107,6 @@ declare class Codec2D {
    */
   private static getDirections;
   private static getSigns;
+  private static getSecond;
 }
 export default Codec2D;
