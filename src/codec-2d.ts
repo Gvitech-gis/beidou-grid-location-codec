@@ -10,18 +10,7 @@ class Codec2D {
    * @returns 北斗二维网格位置码
    */
   static encode(lngLat: LngLat, level = 10): string {
-    // 计算经度，换算成秒
-    let lngInSec =
-      (lngLat.lngDegree * 3600 +
-        (lngLat.lngMinute ??= 0) * 60 +
-        (lngLat.lngSecond ??= 0)) *
-      ((lngLat.lngDirection ?? "E") === "W" ? -1 : 1);
-    // 计算纬度，换算成秒
-    let latInSec =
-      (lngLat.latDegree * 3600 +
-        (lngLat.latMinute ??= 0) * 60 +
-        (lngLat.latSecond ??= 0)) *
-      ((lngLat.latDirection ?? "N") === "S" ? -1 : 1);
+    let [lngInSec, latInSec] = this.getSecond(lngLat);
     // 记录第n级网格的定位角点经纬度
     let lngN = 0,
       latN = 0;
@@ -203,24 +192,34 @@ class Codec2D {
     if (typeof target !== "string") {
       return this.refer(this.encode(target), reference);
     }
-    const tLngLat = this.decode(target);
-    const rLngLat = this.decode(reference);
+    // 获取目标位置和参考位置的坐标(用度分秒保证计算误差)
+    const tLngLat = this.decode(target, { form: "dms" });
+    const tInSecond = this.getSecond(tLngLat);
+    const rLngLat = this.decode(reference, { form: "dms" });
+    const rInSecond = this.getSecond(rLngLat);
+
     const level = this.getCodeLevel(reference);
+    if (level < 5) {
+      // 因为第五级有15个网格，而参考码网格最多有8个
+      throw new Error("参照网格编码必须大于等于5级");
+    }
     // 获取半球信息
     const directions = this.getDirections(reference);
-    const [latSign, lngSign] = this.getSigns(directions);
+    const [lngSign, latSign] = this.getSigns(directions);
     // 乘上符号是为了变换到东北半球计算
+    // 东北半球网格的原点在左下角(西南角)，对于参考坐标系的负方向(西、南)方向取整需要补1，所以直接使用Math.floor
+    // 再乘上符号回到原半球
     // 列差
-    const lngDiff =
-      (((tLngLat.lngDegree - rLngLat.lngDegree) * 3600) /
-        gridSizes1[level][0]) *
-      lngSign;
+    let lngDiff =
+      ((tInSecond[0] - rInSecond[0]) / gridSizes1[level][0]) * lngSign;
+    lngDiff = Math.floor(lngDiff);
+    lngDiff *= lngSign;
     // 行差
-    const latDiff =
-      (((tLngLat.latDegree - rLngLat.latDegree) * 3600) /
-        gridSizes1[level][1]) *
-      latSign;
-    if (Math.abs(lngDiff) >= 8 || Math.abs(latDiff) >= 8) {
+    let latDiff =
+      ((tInSecond[1] - rInSecond[1]) / gridSizes1[level][1]) * latSign;
+    latDiff = Math.floor(latDiff);
+    latDiff *= latSign;
+    if (Math.abs(lngDiff) > 7 || Math.abs(latDiff) > 7) {
       throw new Error("不可进行参考");
     }
     let c = reference + separator;
@@ -228,12 +227,12 @@ class Codec2D {
     if (lngDiff >= 0) {
       c += Math.floor(lngDiff);
     } else {
-      c += String.fromCharCode(65 + Math.floor(-lngDiff)).toUpperCase();
+      c += String.fromCharCode(64 + Math.floor(-lngDiff)).toUpperCase();
     }
     if (latDiff >= 0) {
       c += Math.floor(latDiff);
     } else {
-      c += String.fromCharCode(65 + Math.floor(-latDiff)).toUpperCase();
+      c += String.fromCharCode(64 + Math.floor(-latDiff)).toUpperCase();
     }
     // a为列号，b为行号
     let a: number;
@@ -283,7 +282,7 @@ class Codec2D {
     // 采用度分秒可以避免计算误差
     let tLngLat = this.decode(split[0], { form: "dms" });
     // 获取半球信息
-    const [latSign, lngSign] = this.getSigns([
+    const [lngSign, latSign] = this.getSigns([
       tLngLat.lngDirection!,
       tLngLat.latDirection!
     ]);
@@ -360,12 +359,53 @@ class Codec2D {
    * @param code 位置码
    * @returns 级别
    */
-  private static getCodeLevel(code: string): number {
+  static getCodeLevel(code: string): number {
     const level = codeLengthAtLevel.indexOf(code.length);
     if (level === -1) {
       throw new Error("编码长度错误!");
     }
     return level;
+  }
+
+  /**
+   * 获取一个参照位置网格的可参照范围
+   * @param code 参照位置网格编码，必须大于等于5级
+   * @returns [LngLat, LngLat]，西南角和东北角坐标
+   */
+  static getReferRange(code: string): [LngLat, LngLat] {
+    const level = this.getCodeLevel(code);
+    if (level < 5) {
+      throw new Error("参照网格编码必须大于等于5级");
+    }
+    const lngLat = this.decode(code, { form: "dms" });
+    const lngLatInSecond = this.getSecond(lngLat);
+    let westBound: number;
+    let eastBound: number;
+    let northBound: number;
+    let southBound: number;
+    // 乘数因子为8的项需要减掉一个第十级网格大小，是因为边界上并不能参照
+    if (lngLatInSecond[0] >= 0) {
+      westBound = lngLatInSecond[0] - 7 * gridSizes1[level][0];
+      eastBound =
+        lngLatInSecond[0] + 8 * gridSizes1[level][0] - gridSizes1[10][0];
+    } else {
+      westBound =
+        lngLatInSecond[0] - 8 * gridSizes1[level][0] + gridSizes1[10][0];
+      eastBound = lngLatInSecond[0] + 7 * gridSizes1[level][0];
+    }
+    if (lngLatInSecond[1] >= 0) {
+      southBound = lngLatInSecond[1] - 7 * gridSizes1[level][1];
+      northBound =
+        lngLatInSecond[1] + 8 * gridSizes1[level][1] - gridSizes1[10][1];
+    } else {
+      southBound =
+        lngLatInSecond[1] - 8 * gridSizes1[level][1] + gridSizes1[10][1];
+      northBound = lngLatInSecond[1] + 7 * gridSizes1[level][1];
+    }
+    return [
+      { lngDegree: westBound / 3600, latDegree: southBound / 3600 },
+      { lngDegree: eastBound / 3600, latDegree: northBound / 3600 }
+    ];
   }
 
   /**
@@ -467,6 +507,22 @@ class Codec2D {
 
   private static getSigns(directions: [LngDirection, LatDirection]) {
     return [directions[0] === "E" ? 1 : -1, directions[1] === "N" ? 1 : -1];
+  }
+
+  private static getSecond(lngLat: LngLat): [number, number] {
+    // 计算经度，换算成秒
+    const lngInSec =
+      (lngLat.lngDegree * 3600 +
+        (lngLat.lngMinute ??= 0) * 60 +
+        (lngLat.lngSecond ??= 0)) *
+      ((lngLat.lngDirection ?? "E") === "W" ? -1 : 1);
+    // 计算纬度，换算成秒
+    const latInSec =
+      (lngLat.latDegree * 3600 +
+        (lngLat.latMinute ??= 0) * 60 +
+        (lngLat.latSecond ??= 0)) *
+      ((lngLat.latDirection ?? "N") === "S" ? -1 : 1);
+    return [lngInSec, latInSec];
   }
 }
 
