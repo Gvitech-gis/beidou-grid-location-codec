@@ -139,6 +139,19 @@ Class of Beidou two-dimensional grid location code.
   Codec2D.shorten(codeToBeShorten, 5);
   ```
 
+- `static getCodeLevel(code: string): number`: get the level of a code
+
+  ```typescript
+  const level = this.getCodeLevel(code);
+  ```
+
+- `static getReferRange(code: string): [LngLat, LngLat]`: get the range that can be referenced centered on the point
+
+  ```typescript
+  const bounds: [LngLat, LngLat] = Codec2D.getReferRange("N48J243C100");
+  // bounds[0] => southwest, bounds[1] => northeast. both included in the range
+  ```
+
 ### Codec3D
 
 Class of Beidou three-dimensional grid location code.
