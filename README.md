@@ -152,6 +152,12 @@ Class of Beidou two-dimensional grid location code.
   // bounds[0] => southwest, bounds[1] => northeast. both included in the range
   ```
 
+- `static getNeighbors(code: string): string[]`: get nine neighbors(include itself) of the grid
+
+  ```typescript
+  const neighbors: string[] = Codec2D.getNeighbors("S50J4750900");
+  ```
+
 ### Codec3D
 
 Class of Beidou three-dimensional grid location code.

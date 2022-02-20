@@ -18,6 +18,14 @@ declare class Codec2D {
    */
   private static encodeN;
   /**
+   *
+   * @param level 当前编码层级
+   * @param lngCount 经度方向网格数
+   * @param latCount 纬度方向网格数
+   * @returns 当前层级的编码片段
+   */
+  private static encodeFragment;
+  /**
    * 对北斗二维网格位置码解码
    * @param code 需要解码的北斗二维网格位置码
    * @param decodeOption 解码选项，可不传
@@ -51,16 +59,6 @@ declare class Codec2D {
    */
   static deRefer(code: string, separator?: string): string;
   /**
-   * 还原当前级别网格的经纬度
-   * @param lngLat 上一级的经纬度坐标
-   * @param codeFragment 斗参考网格位置码片段
-   * @param level 当前层级
-   * @param lngSign 经度方向符号
-   * @param latSign 纬度方向符号
-   * @returns 当前级的经纬度坐标
-   */
-  private static deReferN;
-  /**
    * 缩短一个北斗二维网格编码
    * @param code 北斗二维网格编码
    * @param level 目标层级
@@ -79,6 +77,12 @@ declare class Codec2D {
    * @returns [LngLat, LngLat]，西南角和东北角坐标
    */
   static getReferRange(code: string): [LngLat, LngLat];
+  /**
+   * 获取一个网格周围(包括自己)的9个相邻网格码
+   * @param code 目标网格码
+   * @returns string[]
+   */
+  static getNeighbors(code: string): string[];
   /**
    * 获取某一级别的代码片段
    * @param code 位置码
@@ -108,5 +112,20 @@ declare class Codec2D {
   private static getDirections;
   private static getSigns;
   private static getSecond;
+  /**
+   * 用于计算两个同级网格之间相差多少格，注意此方法不同于北斗参照网格码算法
+   * @param reference 被参考位置网格码
+   * @param target 目标位置网格码
+   * @returns [lngDiff, latDiff]，经纬度方向分别偏差网格数量(按照半球的坐标轴方向)
+   */
+  private static getOffset;
+  /**
+   *
+   * @param code 被参考的网格码
+   * @param offsetX 经度方向偏移格数(按照半球的坐标轴方向)
+   * @param offsetY 纬度方向偏移格数(按照半球的坐标轴方向)
+   * @returns 相对位置的网格码
+   */
+  private static getRelativeGrid;
 }
 export default Codec2D;
