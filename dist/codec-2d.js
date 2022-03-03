@@ -347,18 +347,81 @@ class Codec2D {
     ];
   }
   /**
-   * 获取一个网格周围(包括自己)的9个相邻网格码
+   * 获取一个网格相邻网格码，默认是周围九个(包括自己)
    * @param code 目标网格码
+   * @param offsets 需要获取的网格码的偏移量(按照半球的坐标轴方向)
    * @returns string[]
    */
-  static getNeighbors(code) {
+  static getNeighbors(
+    code,
+    offsets = [
+      [-1, -1],
+      [-1, 0],
+      [-1, 1],
+      [0, -1],
+      [0, 0],
+      [0, 1],
+      [1, -1],
+      [1, 0],
+      [1, 1]
+    ]
+  ) {
     const neighbors = [];
-    for (let i = -1; i <= 1; i++) {
-      for (let j = -1; j <= 1; j++) {
-        neighbors.push(this.getRelativeGrid(code, i, j));
-      }
+    for (let i = 0; i < offsets.length; i++) {
+      neighbors.push(this.getRelativeGrid(code, offsets[i][0], offsets[i][1]));
     }
     return neighbors;
+  }
+  /**
+   * 同一级位于同一个父网格下的两个网格，获取之间的所有网格
+   * @param start 起始网格
+   * @param end 结束网格
+   * @returns string[]所有网格
+   */
+  static getAmongUs(start, end) {
+    const levelStart = this.getCodeLevel(start);
+    const levelEnd = this.getCodeLevel(end);
+    if (
+      levelStart !== levelEnd ||
+      this.shorten(start, levelStart - 1) !== this.shorten(end, levelEnd - 1)
+    ) {
+      throw new Error("两个编码必须等级相同且处于同一个上层网格内");
+    }
+    // 获取行和列
+    const startRowCol = this.getRowAndCol(
+      this.getCodeAtLevel(start, levelStart),
+      levelStart
+    );
+    const endRowCol = this.getRowAndCol(
+      this.getCodeAtLevel(end, levelEnd),
+      levelEnd
+    );
+    const startX = Math.min(startRowCol[0], endRowCol[0]);
+    const endX = Math.max(startRowCol[0], endRowCol[0]);
+    const startY = Math.min(startRowCol[1], endRowCol[1]);
+    const endY = Math.max(startRowCol[1], endRowCol[1]);
+    const prefix = this.shorten(start, levelStart - 1);
+    const results = [];
+    for (let i = startX; i <= endX; i++) {
+      for (let j = startY; j <= endY; j++) {
+        results.push(prefix + this.encodeFragment(levelStart, i, j));
+      }
+    }
+    return results;
+  }
+  /**
+   * 获取某一处网格的大致网格大小(只是估计值)
+   * @param code 网格码
+   * @param level 层级
+   * @returns [lngLength, latLength]网格大小
+   */
+  static getGridSize(code, level) {
+    code = this.shorten(code, level);
+    const lngLat = this.decode(code);
+    const cosLat = Math.cos((Math.abs(lngLat.latDegree) * Math.PI) / 180);
+    const lngLength = (data_1.gridSizes1[level][0] / 3600) * 111.7 * cosLat;
+    const latLength = (data_1.gridSizes1[level][1] / 3600) * 111.7;
+    return [lngLength, latLength];
   }
   /**
    * 获取某一级别的代码片段

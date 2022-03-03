@@ -78,11 +78,26 @@ declare class Codec2D {
    */
   static getReferRange(code: string): [LngLat, LngLat];
   /**
-   * 获取一个网格周围(包括自己)的9个相邻网格码
+   * 获取一个网格相邻网格码，默认是周围九个(包括自己)
    * @param code 目标网格码
+   * @param offsets 需要获取的网格码的偏移量(按照半球的坐标轴方向)
    * @returns string[]
    */
-  static getNeighbors(code: string): string[];
+  static getNeighbors(code: string, offsets?: [number, number][]): string[];
+  /**
+   * 同一级位于同一个父网格下的两个网格，获取之间的所有网格
+   * @param start 起始网格
+   * @param end 结束网格
+   * @returns string[]所有网格
+   */
+  static getAmongUs(start: string, end: string): string[];
+  /**
+   * 获取某一处网格的大致网格大小(只是估计值)
+   * @param code 网格码
+   * @param level 层级
+   * @returns [lngLength, latLength]网格大小
+   */
+  static getGridSize(code: string, level: number): number[];
   /**
    * 获取某一级别的代码片段
    * @param code 位置码

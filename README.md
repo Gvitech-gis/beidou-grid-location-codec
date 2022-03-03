@@ -139,23 +139,43 @@ Class of Beidou two-dimensional grid location code.
   Codec2D.shorten(codeToBeShorten, 5);
   ```
 
-- `static getCodeLevel(code: string): number`: get the level of a code
+- `getCodeLevel(code: string): number`: get the level of a code
 
   ```typescript
   const level = this.getCodeLevel(code);
   ```
 
-- `static getReferRange(code: string): [LngLat, LngLat]`: get the range that can be referenced centered on the point
+- `getReferRange(code: string): [LngLat, LngLat]`: get the range that can be referenced centered on the point
 
   ```typescript
   const bounds: [LngLat, LngLat] = Codec2D.getReferRange("N48J243C100");
   // bounds[0] => southwest, bounds[1] => northeast. both included in the range
   ```
 
-- `static getNeighbors(code: string): string[]`: get nine neighbors(include itself) of the grid
+- `getNeighbors(code: string, offsets?: [number, number][]): string[]`: get nine neighbors(include itself) of the grid
 
   ```typescript
   const neighbors: string[] = Codec2D.getNeighbors("S50J4750900");
+
+  // Specify neighbors' position
+  const neighbors: string[] = Codec2D.getNeighbors("N50H05142", [
+    [1, 1],
+    [1, -1]
+  ]);
+  ```
+
+- `getAmongUs(start: string, end: string): string[]`: get grids between two girds with same level and parent
+
+  ```typescript
+  console.log(Codec2D.getAmongUs("N50H05142", "N50H05170"));
+  ```
+
+- `getGridSize(code: string, level: number)`: get the approximate size of a grid
+
+  ```typescript
+  for (let i = 1; i <= 4; i++) {
+    console.log(Codec2D.getGridSize("N46A71529E7", i));
+  }
   ```
 
 ### Codec3D
