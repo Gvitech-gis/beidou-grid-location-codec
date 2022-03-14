@@ -54,7 +54,7 @@ class Codec2D {
         // a <0 时，需要取反并-1
         (a >= 0 ? a : -a - 1) * data_1.gridSizes1[n][0],
         b * data_1.gridSizes1[n][1],
-        this.encodeFragment(n, a, b)
+        this.encodeFragment(n, a + 31, b)
       ];
     } else {
       // 公式中需要+1，为了底下方便计算没有+1，因为之后还要-1
@@ -84,7 +84,7 @@ class Codec2D {
       );
     } else if (level === 1) {
       // 前置位补零
-      const aS = (lngCount + 31).toString().padStart(2, "0");
+      const aS = lngCount.toString().padStart(2, "0");
       const bS = String.fromCharCode(65 + latCount);
       return aS + bS;
     }

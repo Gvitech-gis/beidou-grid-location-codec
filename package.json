@@ -12,6 +12,7 @@
     "build": "npx tsc -p .",
     "test": "node test",
     "test-ts": "ts-node test/test",
+    "testT": "ts-node test/tmp",
     "prettier": "prettier --write .",
     "lint": "eslint ./",
     "prepare": "husky install",
