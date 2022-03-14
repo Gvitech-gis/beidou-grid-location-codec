@@ -48,16 +48,13 @@ class Codec2D {
       // 根据国家基本比例尺地形图分幅和编号，按照1:1000000对第一级进行划分
       // 经度
       const a = Math.floor(lngInSec / data_1.gridSizes1[n][0]);
-      // 前置位补零
-      const aS = (a + 31).toString().padStart(2, "0");
       // 纬度
       const b = Math.floor(Math.abs(latInSec) / data_1.gridSizes1[n][1]);
-      const bS = String.fromCharCode(65 + b);
       return [
         // a <0 时，需要取反并-1
         (a >= 0 ? a : -a - 1) * data_1.gridSizes1[n][0],
         b * data_1.gridSizes1[n][1],
-        aS + bS
+        this.encodeFragment(n, a, b)
       ];
     } else {
       // 公式中需要+1，为了底下方便计算没有+1，因为之后还要-1
@@ -85,6 +82,11 @@ class Codec2D {
         lngCount.toString(16).toUpperCase() +
         latCount.toString(16).toUpperCase()
       );
+    } else if (level === 1) {
+      // 前置位补零
+      const aS = (lngCount + 31).toString().padStart(2, "0");
+      const bS = String.fromCharCode(65 + latCount);
+      return aS + bS;
     }
     throw new Error("非法层级level");
   }
