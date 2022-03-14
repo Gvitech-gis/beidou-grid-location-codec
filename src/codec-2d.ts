@@ -300,7 +300,8 @@ class Codec2D {
    * @returns 缩短后的编码
    */
   static shorten(code: string, level: number): string {
-    if (level < 1 || level > 10) {
+    // level=0时只返回半球编号
+    if (level < 0 || level > 10) {
       throw new Error("层级错误");
     }
     const nowLevel = this.getCodeLevel(code);
