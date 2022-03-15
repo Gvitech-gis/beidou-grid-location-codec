@@ -449,6 +449,91 @@ class Codec2D {
   }
 
   /**
+   * 用于计算两个同级网格之间相差多少格，注意此方法不同于北斗参照网格码算法
+   * @param reference 被参考位置网格码
+   * @param target 目标位置网格码
+   * @returns [lngDiff, latDiff]，经纬度方向分别偏差网格数量(按照半球的坐标轴方向)
+   */
+  static getOffset(reference: string, target: string): [number, number] {
+    const level = this.getCodeLevel(reference);
+    target = this.shorten(target, level);
+    // 如果level-1层的网格相同，直接进行减法即可
+    if (
+      reference.substring(0, codeLengthAtLevel[level - 1]) ===
+      target.substring(0, codeLengthAtLevel[level - 1])
+    ) {
+      const rRowCol = this.getRowAndCol(
+        this.getCodeAtLevel(reference, level),
+        level
+      );
+      const tRowCol = this.getRowAndCol(
+        this.getCodeAtLevel(target, level),
+        level
+      );
+      return [tRowCol[0] - rRowCol[0], tRowCol[1] - rRowCol[1]];
+    } else {
+      // 如果level-1层不同，为了计算简单，转为经纬度计算
+      // 获取目标位置和参考位置的坐标(用度分秒保证计算误差)
+      const tLngLat = this.decode(target, { form: "dms" });
+      const tInSecond = this.getSecond(tLngLat);
+      const rLngLat = this.decode(reference, { form: "dms" });
+      const rInSecond = this.getSecond(rLngLat);
+      // 获取半球信息
+      const directions = this.getDirections(reference);
+      const [lngSign, latSign] = this.getSigns(directions);
+      // 乘上符号是为了变换到东北半球计算
+      // 东北半球网格的原点在左下角(西南角)，对于参考坐标系的负方向(西、南)方向取整需要补1，所以直接使用Math.floor
+      // 列差
+      let lngDiff =
+        ((tInSecond[0] - rInSecond[0]) / gridSizes1[level][0]) * lngSign;
+      lngDiff = Math.floor(lngDiff);
+      // 行差
+      let latDiff =
+        ((tInSecond[1] - rInSecond[1]) / gridSizes1[level][1]) * latSign;
+      latDiff = Math.floor(latDiff);
+      return [lngDiff, latDiff];
+    }
+  }
+
+  /**
+   *
+   * @param code 被参考的网格码
+   * @param offsetX 经度方向偏移格数(按照半球的坐标轴方向)
+   * @param offsetY 纬度方向偏移格数(按照半球的坐标轴方向)
+   * @returns 相对位置的网格码
+   */
+  static getRelativeGrid(
+    code: string,
+    offsetX: number,
+    offsetY: number
+  ): string {
+    const level = this.getCodeLevel(code);
+    const rowCol = this.getRowAndCol(this.getCodeAtLevel(code, level), level);
+    const newX = rowCol[0] + offsetX;
+    const newY = rowCol[1] + offsetY;
+    if (
+      newX >= 0 &&
+      newX < gridCount1[level][0] &&
+      newY >= 0 &&
+      newY < gridCount1[level][1]
+    ) {
+      // 如果两个网格的上一层网格相同可以直接相加得到结果
+      return (
+        code.substring(0, codeLengthAtLevel[level - 1]) +
+        this.encodeFragment(level, newX, newY)
+      );
+    } else {
+      // 上一层网格不相同，采用经纬度计算
+      // 采用度分秒可以避免计算误差
+      const lngLat = this.decode(code, { form: "dms" });
+      // 半球符号lngSign与latSign各自约去(平方为1)
+      lngLat.lngSecond! += offsetX * gridSizes1[level][0];
+      lngLat.latSecond! += offsetY * gridSizes1[level][1];
+      return this.encode(lngLat, level);
+    }
+  }
+
+  /**
    * 获取某一级别的代码片段
    * @param code 位置码
    * @param level 级别
@@ -563,94 +648,6 @@ class Codec2D {
         (lngLat.latSecond ??= 0)) *
       ((lngLat.latDirection ?? "N") === "S" ? -1 : 1);
     return [lngInSec, latInSec];
-  }
-
-  /**
-   * 用于计算两个同级网格之间相差多少格，注意此方法不同于北斗参照网格码算法
-   * @param reference 被参考位置网格码
-   * @param target 目标位置网格码
-   * @returns [lngDiff, latDiff]，经纬度方向分别偏差网格数量(按照半球的坐标轴方向)
-   */
-  private static getOffset(
-    reference: string,
-    target: string
-  ): [number, number] {
-    const level = this.getCodeLevel(reference);
-    target = this.shorten(target, level);
-    // 如果level-1层的网格相同，直接进行减法即可
-    if (
-      reference.substring(0, codeLengthAtLevel[level - 1]) ===
-      target.substring(0, codeLengthAtLevel[level - 1])
-    ) {
-      const rRowCol = this.getRowAndCol(
-        this.getCodeAtLevel(reference, level),
-        level
-      );
-      const tRowCol = this.getRowAndCol(
-        this.getCodeAtLevel(target, level),
-        level
-      );
-      return [tRowCol[0] - rRowCol[0], tRowCol[1] - rRowCol[1]];
-    } else {
-      // 如果level-1层不同，为了计算简单，转为经纬度计算
-      // 获取目标位置和参考位置的坐标(用度分秒保证计算误差)
-      const tLngLat = this.decode(target, { form: "dms" });
-      const tInSecond = this.getSecond(tLngLat);
-      const rLngLat = this.decode(reference, { form: "dms" });
-      const rInSecond = this.getSecond(rLngLat);
-      // 获取半球信息
-      const directions = this.getDirections(reference);
-      const [lngSign, latSign] = this.getSigns(directions);
-      // 乘上符号是为了变换到东北半球计算
-      // 东北半球网格的原点在左下角(西南角)，对于参考坐标系的负方向(西、南)方向取整需要补1，所以直接使用Math.floor
-      // 列差
-      let lngDiff =
-        ((tInSecond[0] - rInSecond[0]) / gridSizes1[level][0]) * lngSign;
-      lngDiff = Math.floor(lngDiff);
-      // 行差
-      let latDiff =
-        ((tInSecond[1] - rInSecond[1]) / gridSizes1[level][1]) * latSign;
-      latDiff = Math.floor(latDiff);
-      return [lngDiff, latDiff];
-    }
-  }
-
-  /**
-   *
-   * @param code 被参考的网格码
-   * @param offsetX 经度方向偏移格数(按照半球的坐标轴方向)
-   * @param offsetY 纬度方向偏移格数(按照半球的坐标轴方向)
-   * @returns 相对位置的网格码
-   */
-  private static getRelativeGrid(
-    code: string,
-    offsetX: number,
-    offsetY: number
-  ): string {
-    const level = this.getCodeLevel(code);
-    const rowCol = this.getRowAndCol(this.getCodeAtLevel(code, level), level);
-    const newX = rowCol[0] + offsetX;
-    const newY = rowCol[1] + offsetY;
-    if (
-      newX >= 0 &&
-      newX < gridCount1[level][0] &&
-      newY >= 0 &&
-      newY < gridCount1[level][1]
-    ) {
-      // 如果两个网格的上一层网格相同可以直接相加得到结果
-      return (
-        code.substring(0, codeLengthAtLevel[level - 1]) +
-        this.encodeFragment(level, newX, newY)
-      );
-    } else {
-      // 上一层网格不相同，采用经纬度计算
-      // 采用度分秒可以避免计算误差
-      const lngLat = this.decode(code, { form: "dms" });
-      // 半球符号lngSign与latSign各自约去(平方为1)
-      lngLat.lngSecond! += offsetX * gridSizes1[level][0];
-      lngLat.latSecond! += offsetY * gridSizes1[level][1];
-      return this.encode(lngLat, level);
-    }
   }
 }
 

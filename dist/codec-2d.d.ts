@@ -99,6 +99,25 @@ declare class Codec2D {
    */
   static getGridSize(code: string, level: number): number[];
   /**
+   * 用于计算两个同级网格之间相差多少格，注意此方法不同于北斗参照网格码算法
+   * @param reference 被参考位置网格码
+   * @param target 目标位置网格码
+   * @returns [lngDiff, latDiff]，经纬度方向分别偏差网格数量(按照半球的坐标轴方向)
+   */
+  static getOffset(reference: string, target: string): [number, number];
+  /**
+   *
+   * @param code 被参考的网格码
+   * @param offsetX 经度方向偏移格数(按照半球的坐标轴方向)
+   * @param offsetY 纬度方向偏移格数(按照半球的坐标轴方向)
+   * @returns 相对位置的网格码
+   */
+  static getRelativeGrid(
+    code: string,
+    offsetX: number,
+    offsetY: number
+  ): string;
+  /**
    * 获取某一级别的代码片段
    * @param code 位置码
    * @param level 级别
@@ -127,20 +146,5 @@ declare class Codec2D {
   private static getDirections;
   private static getSigns;
   private static getSecond;
-  /**
-   * 用于计算两个同级网格之间相差多少格，注意此方法不同于北斗参照网格码算法
-   * @param reference 被参考位置网格码
-   * @param target 目标位置网格码
-   * @returns [lngDiff, latDiff]，经纬度方向分别偏差网格数量(按照半球的坐标轴方向)
-   */
-  private static getOffset;
-  /**
-   *
-   * @param code 被参考的网格码
-   * @param offsetX 经度方向偏移格数(按照半球的坐标轴方向)
-   * @param offsetY 纬度方向偏移格数(按照半球的坐标轴方向)
-   * @returns 相对位置的网格码
-   */
-  private static getRelativeGrid;
 }
 export default Codec2D;
