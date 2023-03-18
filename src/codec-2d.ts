@@ -1,6 +1,17 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { LngLat, DecodeOption, LngDirection, LatDirection } from "./type";
-import { gridSizes1, gridCount1, codeLengthAtLevel } from "./data";
+import {
+  LngLat,
+  DecodeOption,
+  LngDirection,
+  LatDirection,
+  PoleGrid
+} from "./type";
+import {
+  gridSizes1,
+  gridCount1,
+  codeLengthAtLevel,
+  gridCountPole
+} from "./data";
 
 class Codec2D {
   /**
@@ -17,19 +28,50 @@ class Codec2D {
     // 存储结果
     let resCode = "";
     if (Math.abs(lngLat.latDegree) >= 88) {
-      throw new Error("暂不支持两级地区(纬度大于等于88°)编码");
-    }
-    for (let i = 0; i <= level; i++) {
-      const t = this.encodeN(lngInSec, latInSec, lngN, latN, i);
-      lngN += t[0];
-      latN += t[1];
-      resCode += t[2];
-      // 从第二级开始，对称到东北半球计算，需要均取非负数计算
-      if (i === 1) {
-        lngInSec = Math.abs(lngInSec);
-        latInSec = Math.abs(latInSec);
+      // 都变换到东经0~90°
+      let part: number;
+      let parent: PoleGrid = { isPoint: true, latSize: 2 * 3600 };
+      if (lngInSec >= 120 * 3600) {
+        lngInSec -= 120 * 3600;
+        part = 2;
+      } else if (lngInSec <= -120 * 3600) {
+        lngInSec = -lngInSec - 60 * 3600;
+        part = 2;
+      } else if (lngInSec < 0) {
+        lngInSec = -lngInSec;
+        part = 3;
+      } else {
+        part = 1;
+      }
+      for (let i = 0; i <= level; i++) {
+        const res = this.encodeNPole(
+          lngInSec,
+          latInSec,
+          lngN,
+          latN,
+          parent,
+          i,
+          part
+        );
+        lngN += res[0];
+        latN += res[1];
+        resCode += res[2];
+        parent = res[3];
+      }
+    } else {
+      for (let i = 0; i <= level; i++) {
+        const t = this.encodeN(lngInSec, latInSec, lngN, latN, i);
+        lngN += t[0];
+        latN += t[1];
+        resCode += t[2];
+        // 从第二级开始，对称到东北半球计算，需要均取非负数计算
+        if (i === 1) {
+          lngInSec = Math.abs(lngInSec);
+          latInSec = Math.abs(latInSec);
+        }
       }
     }
+
     return resCode;
   }
 
@@ -74,6 +116,101 @@ class Codec2D {
         this.encodeFragment(n, a, b)
       ];
     }
+  }
+
+  private static encodeNPole(
+    lngInSec: number,
+    latInSec: number,
+    lngN: number,
+    latN: number,
+    parent: PoleGrid,
+    n: number,
+    part: number
+  ): [number, number, string, PoleGrid] {
+    if (n < 0 || n > 10) {
+      throw new Error("encodeNP: 等级应该在0~10之间");
+    }
+    let lngNP1: number;
+    let latNP1: number;
+    let codeN = "";
+    let self: PoleGrid;
+    if (n === 0) {
+      lngNP1 = 0;
+      latNP1 = 0;
+      codeN = latInSec > 0 ? "N" : "S";
+      self = { isPoint: true, latSize: 2 * 3600 };
+    } else if (n === 1) {
+      lngNP1 = 0;
+      latNP1 = 88 * 3600;
+      codeN = "000";
+      self = { isPoint: true, latSize: 2 * 3600 };
+    } else if (n === 2) {
+      // 第二级时，全都对称到东经0~120°
+      if (latInSec - latN >= parent.latSize / 2) {
+        codeN += (0).toString();
+        if (latInSec - latN >= parent.latSize * 0.75) {
+          lngNP1 = 0;
+          latNP1 = parent.latSize * 0.75;
+          codeN += (0).toString();
+          self = { isPoint: true, latSize: parent.latSize / 4 };
+        } else {
+          lngNP1 = 0;
+          latNP1 = parent.latSize * 0.5;
+          codeN += part.toString();
+          self = {
+            isPoint: false,
+            latSize: parent.latSize / 4,
+            lngSize: 120 * 3600
+          };
+        }
+      } else {
+        codeN += part.toString();
+        const row = Math.floor(latInSec - latN / (parent.latSize * 0.25));
+        const col = Math.floor(lngInSec / (60 * 3600));
+        lngNP1 = 60 * 3600 * col;
+        latNP1 = row * (parent.latSize * 0.25);
+        codeN += col + 2 * row;
+        self = {
+          isPoint: false,
+          latSize: parent.latSize / 4,
+          lngSize: 60 * 3600
+        };
+      }
+    } else {
+      const gridCountLng = gridCountPole[n][0];
+      const gridCountLat = gridCountPole[n][1];
+      if (parent.isPoint) {
+        if (latInSec - latN >= parent.latSize / gridCountLat) {
+          codeN = "0";
+          lngNP1 = 0;
+          latNP1 = (parent.latSize / gridCountLat) * (gridCountLat - 1);
+          self = { isPoint: true, latSize: parent.latSize / gridCountLat };
+        } else {
+          codeN = part.toString();
+          lngNP1 = 0;
+          latNP1 = 0;
+          self = {
+            isPoint: false,
+            latSize: parent.latSize / gridCountLat,
+            lngSize: 120 * 3600
+          };
+        }
+      } else {
+        const gridSizeLng = parent.lngSize! / gridCountLng;
+        const gridSizeLat = parent.latSize / gridCountLat;
+        const a = Math.floor((lngInSec - lngN) / gridSizeLng);
+        const b = Math.floor((latInSec - latN) / gridSizeLat);
+        lngNP1 = a * gridSizeLng;
+        latNP1 = b * gridSizeLat;
+        codeN = a.toString(16).toUpperCase() + b.toString(16).toUpperCase();
+        self = {
+          isPoint: false,
+          latSize: parent.latSize / gridCountLat,
+          lngSize: parent.lngSize! / gridCountLng
+        };
+      }
+    }
+    return [lngNP1, latNP1, codeN, self];
   }
 
   /**

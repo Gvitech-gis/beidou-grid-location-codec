@@ -26,6 +26,20 @@ const gridCount1 = [
   [8, 8]
 ];
 
+const gridCountPole: [number, number][] = [
+  [1, 1],
+  [1, 1],
+  [4, 4],
+  [2, 2],
+  [15, 15],
+  [15, 15],
+  [2, 2],
+  [8, 8],
+  [8, 8],
+  [8, 8],
+  [8, 8]
+];
+
 const codeLengthAtLevel = [1, 4, 6, 7, 9, 11, 12, 14, 16, 18, 20];
 
 const elevationParams = [
@@ -43,4 +57,10 @@ const elevationParams = [
   [3, 8]
 ];
 
-export { gridSizes1, gridCount1, codeLengthAtLevel, elevationParams };
+export {
+  gridSizes1,
+  gridCount1,
+  codeLengthAtLevel,
+  elevationParams,
+  gridCountPole
+};
