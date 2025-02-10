@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.elevationParams =
+exports.gridCountPole =
+  exports.elevationParams =
   exports.codeLengthAtLevel =
   exports.gridCount1 =
   exports.gridSizes1 =
@@ -33,6 +34,20 @@ const gridCount1 = [
   [8, 8]
 ];
 exports.gridCount1 = gridCount1;
+const gridCountPole = [
+  [1, 1],
+  [1, 1],
+  [4, 4],
+  [2, 2],
+  [15, 15],
+  [15, 15],
+  [2, 2],
+  [8, 8],
+  [8, 8],
+  [8, 8],
+  [8, 8]
+];
+exports.gridCountPole = gridCountPole;
 const codeLengthAtLevel = [1, 4, 6, 7, 9, 11, 12, 14, 16, 18, 20];
 exports.codeLengthAtLevel = codeLengthAtLevel;
 const elevationParams = [

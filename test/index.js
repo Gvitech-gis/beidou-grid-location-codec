@@ -98,3 +98,9 @@ console.log("需要缩短的编码:", codeToBeShorten);
 for (let i = 9; i >= 2; i--) {
   console.log(`缩短到第${i}级的编码是:`, Codec2D.shorten(codeToBeShorten, i));
 }
+
+console.log("---------------------------------------");
+console.log(
+  "测试issue 位置码错误的判断方法 checkCodeFragmentRange 处理第一级网格时，将A60判定为错误位置码",
+  Codec2D.decode("N60A")
+);

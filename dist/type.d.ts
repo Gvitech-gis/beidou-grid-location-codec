@@ -16,4 +16,16 @@ declare type DecodeOption = {
 };
 declare type LngDirection = "W" | "E";
 declare type LatDirection = "S" | "N";
-export { LngLat, DecodeOption, LngDirection, LatDirection, LngLatEle };
+declare type PoleGrid = {
+  isPoint: boolean;
+  lngSize?: number;
+  latSize: number;
+};
+export {
+  LngLat,
+  DecodeOption,
+  LngDirection,
+  LatDirection,
+  LngLatEle,
+  PoleGrid
+};

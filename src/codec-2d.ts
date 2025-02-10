@@ -746,7 +746,16 @@ class Codec2D {
     lat: number,
     level: number
   ) {
-    if (
+    if (level === 1) {
+      if (
+        lng > gridCount1[level][0] ||
+        lng < 1 ||
+        lat < 0 ||
+        lat > gridCount1[level][1] - 1
+      ) {
+        throw new Error("位置码错误");
+      }
+    } else if (
       lng > gridCount1[level][0] - 1 ||
       lng < 0 ||
       lat < 0 ||

@@ -17,6 +17,7 @@ declare class Codec2D {
    * @returns [lngN+1, latN+1, codeN]
    */
   private static encodeN;
+  private static encodeNPole;
   /**
    *
    * @param level 当前编码层级
