@@ -492,7 +492,7 @@ class Codec2D {
     return neighbors;
   }
   /**
-   * 同一级位于同一个父网格下的两个网格，获取之间的所有网格
+   * 同一级位于同一级别下的两个网格，获取之间的所有网格
    * @param start 起始网格
    * @param end 结束网格
    * @returns string[]所有网格
@@ -500,30 +500,22 @@ class Codec2D {
   static getAmongUs(start, end) {
     const levelStart = this.getCodeLevel(start);
     const levelEnd = this.getCodeLevel(end);
-    if (
-      levelStart !== levelEnd ||
-      this.shorten(start, levelStart - 1) !== this.shorten(end, levelEnd - 1)
-    ) {
-      throw new Error("两个编码必须等级相同且处于同一个上层网格内");
+    if (levelStart !== levelEnd) {
+      throw new Error("两个编码必须等级相同");
     }
-    // 获取行和列
-    const startRowCol = this.getRowAndCol(
-      this.getCodeAtLevel(start, levelStart),
-      levelStart
-    );
-    const endRowCol = this.getRowAndCol(
-      this.getCodeAtLevel(end, levelEnd),
-      levelEnd
-    );
-    const startX = Math.min(startRowCol[0], endRowCol[0]);
-    const endX = Math.max(startRowCol[0], endRowCol[0]);
-    const startY = Math.min(startRowCol[1], endRowCol[1]);
-    const endY = Math.max(startRowCol[1], endRowCol[1]);
-    const prefix = this.shorten(start, levelStart - 1);
     const results = [];
-    for (let i = startX; i <= endX; i++) {
-      for (let j = startY; j <= endY; j++) {
-        results.push(prefix + this.encodeFragment(levelStart, i, j));
+    const [diffX, diffY] = this.getOffset(start, end);
+    for (
+      let i = 0;
+      diffX >= 0 ? i <= diffX : i >= diffX;
+      diffX >= 0 ? i++ : i--
+    ) {
+      for (
+        let j = 0;
+        diffY >= 0 ? j <= diffY : j >= diffY;
+        diffY >= 0 ? j++ : j--
+      ) {
+        results.push(this.getRelativeGrid(start, i, j));
       }
     }
     return results;
@@ -721,6 +713,14 @@ class Codec2D {
   }
   static getSecond(lngLat) {
     var _a, _b, _c, _d, _e, _f;
+    // 检查经度相关的参数是否有效
+    if (!lngLat.lngDegree || isNaN(lngLat.lngDegree)) {
+      throw new Error("Invalid longitude values");
+    }
+    // 检查纬度相关的参数是否有效
+    if (!lngLat.latDegree || isNaN(lngLat.latDegree)) {
+      throw new Error("Invalid latitude values");
+    }
     // 计算经度，换算成秒
     const lngInSec =
       (lngLat.lngDegree * 3600 +

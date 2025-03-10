@@ -86,7 +86,7 @@ declare class Codec2D {
    */
   static getNeighbors(code: string, offsets?: [number, number][]): string[];
   /**
-   * 同一级位于同一个父网格下的两个网格，获取之间的所有网格
+   * 同一级位于同一级别下的两个网格，获取之间的所有网格
    * @param start 起始网格
    * @param end 结束网格
    * @returns string[]所有网格

@@ -1,5 +1,9 @@
 # beidou-grid-location-codec
 
+This project will be maintained for a long time. If you find any bugs, please submit issues.❤❤❤
+
+[Changelog](changelog.md)
+
 ## Install
 
 Using npm:
