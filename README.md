@@ -222,3 +222,12 @@ Class of Beidou three-dimensional grid location code.
   // Specify decodeOption and r
   const lngLatEle: LngLatEle = Codec3D.decode(code3d, { form: "dms" }, 6378000);
   ```
+
+- `getNeighbor(codeEle: string, offset: -1 | 1,level?:number): string` get neighbor of the grid along the elevation direction
+
+  ```typescript
+  const code = Codec3D.getNeighbor("000000015",1);
+
+  // Specify level
+  const code = Codec3D.getNeighbor("000000015", 1, 7);
+  ```
