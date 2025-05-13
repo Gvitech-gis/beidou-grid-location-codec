@@ -2,7 +2,7 @@
  * 根据GBT+39409-2020附录C.5开发
  */
 export const elevationCodeLengthAtLevel = [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-export default function getElevationNeighbors(
+export default function getElevationNeighbor(
   codeElevation: string,
   offset: -1 | 1,
   level?: number

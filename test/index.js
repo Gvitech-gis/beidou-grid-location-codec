@@ -112,7 +112,7 @@ function offset(codeEle, offset) {
   const step = offset > 0 ? 1 : -1;
   offset = Math.abs(offset);
   for (let i = 0; i < offset; i++) {
-    codeEle = Codec3D.getNeighbors(codeEle, step);
+    codeEle = Codec3D.getNeighbor(codeEle, step);
   }
   return codeEle;
 }

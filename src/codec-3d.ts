@@ -1,7 +1,7 @@
 import { LngLatEle, DecodeOption } from "./type";
 import Codec2D from "./codec-2d";
 import { elevationParams } from "./data";
-import getElevationNeighbors from "./getElevationNeighbors";
+import getElevationNeighbor from "./getElevationNeighbor";
 
 class Codec3D {
   /**
@@ -130,12 +130,12 @@ class Codec3D {
    * @param level 可选、层级
    * @returns 新的高度编码
    */
-  static getNeighbors(
+  static getNeighbor(
     codeEle: string,
     offset: -1 | 1,
     level?: number
   ): string | null {
-    return getElevationNeighbors(codeEle, offset, level);
+    return getElevationNeighbor(codeEle, offset, level);
   }
 }
 

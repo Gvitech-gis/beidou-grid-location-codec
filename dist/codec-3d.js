@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const codec_2d_1 = __importDefault(require("./codec-2d"));
 const data_1 = require("./data");
-const getElevationNeighbors_1 = __importDefault(require("./getElevationNeighbors"));
+const getElevationNeighbor_1 = __importDefault(require("./getElevationNeighbor"));
 class Codec3D {
     /**
      * 对大地坐标进行编码
@@ -123,8 +123,8 @@ class Codec3D {
      * @param level 可选、层级
      * @returns 新的高度编码
      */
-    static getNeighbors(codeEle, offset, level) {
-        return (0, getElevationNeighbors_1.default)(codeEle, offset, level);
+    static getNeighbor(codeEle, offset, level) {
+        return (0, getElevationNeighbor_1.default)(codeEle, offset, level);
     }
 }
 exports.default = Codec3D;

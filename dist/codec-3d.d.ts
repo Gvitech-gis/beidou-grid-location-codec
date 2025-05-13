@@ -37,6 +37,6 @@ declare class Codec3D {
      * @param level 可选、层级
      * @returns 新的高度编码
      */
-    static getNeighbors(codeEle: string, offset: -1 | 1, level?: number): string | null;
+    static getNeighbor(codeEle: string, offset: -1 | 1, level?: number): string | null;
 }
 export default Codec3D;
