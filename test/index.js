@@ -1,6 +1,6 @@
 // import Codec2D from "../dist/index";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { Codec2D } = require("../dist/index");
+const { Codec2D, Codec3D } = require("../dist/index");
 console.log("---------------------------------------");
 const lngLatNE = {
   lngDegree: 116,
@@ -104,3 +104,35 @@ console.log(
   "测试issue 位置码错误的判断方法 checkCodeFragmentRange 处理第一级网格时，将A60判定为错误位置码",
   Codec2D.decode("N60A")
 );
+
+console.log("---------------------------------------");
+const code = "000000015";
+function offset(codeEle, offset) {
+  if (offset == 0) return codeEle;
+  const step = offset > 0 ? 1 : -1;
+  offset = Math.abs(offset);
+  for (let i = 0; i < offset; i++) {
+    codeEle = Codec3D.getNeighbors(codeEle, step);
+  }
+  return codeEle;
+}
+console.log("offset +3:", offset(code, +3), offset(code, +3) === "000000100");
+console.log("offset +2:", offset(code, +2) === "000000017");
+console.log("offset +1:", offset(code, +1, 7) === "000000016");
+console.log("offset -1:", offset(code, +1, 7) === "000000016");
+console.log("offset +2:", offset(code, +2) === "000000017");
+console.log("offset -5:", offset(code, -5) === "000000010");
+console.log("offset -6:", offset(code, -6) === "000000007");
+console.log("offset -7:", offset(code, -7) === "000000006");
+console.log("offset -13:", offset(code, -13) === "000000000");
+console.log(
+  "offset -14:",
+  offset(code, -14) === "100000000" //地面之下一个网格
+);
+
+const code2 = "012";
+console.log("012 +1", offset(code2, +1) == "013");
+console.log("012 -1", offset(code2, -1) == "011");
+console.log("012 +30", offset(code2, 30) == "042");
+console.log("012 -12", offset(code2, -12) == "000");
+console.log("012 -13", offset(code2, -13) == "100");

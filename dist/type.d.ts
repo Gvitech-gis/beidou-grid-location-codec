@@ -1,31 +1,24 @@
-declare type LngLat = {
-  lngDegree: number;
-  lngMinute?: number;
-  lngSecond?: number;
-  lngDirection?: LngDirection;
-  latDegree: number;
-  latMinute?: number;
-  latSecond?: number;
-  latDirection?: LatDirection;
+type LngLat = {
+    lngDegree: number;
+    lngMinute?: number;
+    lngSecond?: number;
+    lngDirection?: LngDirection;
+    latDegree: number;
+    latMinute?: number;
+    latSecond?: number;
+    latDirection?: LatDirection;
 };
-declare type LngLatEle = LngLat & {
-  elevation: number;
+type LngLatEle = LngLat & {
+    elevation: number;
 };
-declare type DecodeOption = {
-  form: "decimal" | "dms";
+type DecodeOption = {
+    form: "decimal" | "dms";
 };
-declare type LngDirection = "W" | "E";
-declare type LatDirection = "S" | "N";
-declare type PoleGrid = {
-  isPoint: boolean;
-  lngSize?: number;
-  latSize: number;
+type LngDirection = "W" | "E";
+type LatDirection = "S" | "N";
+type PoleGrid = {
+    isPoint: boolean;
+    lngSize?: number;
+    latSize: number;
 };
-export {
-  LngLat,
-  DecodeOption,
-  LngDirection,
-  LatDirection,
-  LngLatEle,
-  PoleGrid
-};
+export { LngLat, DecodeOption, LngDirection, LatDirection, LngLatEle, PoleGrid };

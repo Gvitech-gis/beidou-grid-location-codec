@@ -1,6 +1,7 @@
 import { LngLatEle, DecodeOption } from "./type";
 import Codec2D from "./codec-2d";
 import { elevationParams } from "./data";
+import getElevationNeighbors from "./getElevationNeighbors";
 
 class Codec3D {
   /**
@@ -121,6 +122,20 @@ class Codec3D {
     const h =
       Math.pow(1 + theta0 * (Math.PI / 180), n * (theta / theta0)) * r - r;
     return h;
+  }
+  /**
+   * 根据高度编码计算上（下）一个高度编码
+   * @param codeEle 高程方向编码
+   * @param offset 高度网格偏移量
+   * @param level 可选、层级
+   * @returns 新的高度编码
+   */
+  static getNeighbors(
+    codeEle: string,
+    offset: -1 | 1,
+    level?: number
+  ): string | null {
+    return getElevationNeighbors(codeEle, offset, level);
   }
 }
 
