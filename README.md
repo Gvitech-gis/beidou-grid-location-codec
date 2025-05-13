@@ -226,7 +226,7 @@ Class of Beidou three-dimensional grid location code.
 - `getNeighbor(codeEle: string, offset: -1 | 1,level?:number): string` get neighbor of the grid along the elevation direction
 
   ```typescript
-  const code = Codec3D.getNeighbor("000000015",1);
+  const code = Codec3D.getNeighbor("000000015", 1);
 
   // Specify level
   const code = Codec3D.getNeighbor("000000015", 1, 7);
