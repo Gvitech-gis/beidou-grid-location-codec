@@ -103,9 +103,10 @@ const lngLatSW: LngLat = {
   latDirection: "S"
 };
 console.log("坐标: ", lngLatSW);
-const codeSW = Codec2D.encode(lngLatSW, 10);
+const codeSW = Codec2D.encode(lngLatSW, 4);
 console.log("北斗二维网格位置码: ", codeSW);
 console.log("解码 => ", Codec2D.decode(codeSW));
+console.log("基础信息=>",Codec2D.getGridInfo(codeSW))
 console.log("-------------------");
 console.log("参照 S11J47539B82553461");
 const referSW1 = Codec2D.refer(codeSW, "S11J47539B82553461");
