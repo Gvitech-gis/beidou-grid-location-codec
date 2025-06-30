@@ -137,6 +137,92 @@ class Codec3D {
   ): string | null {
     return getElevationNeighbor(codeEle, offset, level);
   }
+
+  /**
+   * 通过网格码 ID 获取网格信息
+   * @param code 网格码 ID
+   * @returns 网格信息，包括宽、高、最大经纬度、最小经纬度、最小高程、最大高程
+   */
+  static getGridInfo(code: string): {
+    minLng: number;
+    maxLng: number;
+    minLat: number;
+    maxLat: number;
+    minEle: number;
+    maxEle: number;
+  } {
+    const code2D = code.substring(0, 20);
+    const codeEle = code.substring(20, 32);
+
+    const {  minLng, maxLng, minLat, maxLat } = Codec2D.getGridInfo(code2D);
+    const minEle = this.decodeElevation(codeEle);
+    const maxEle = this.decodeElevation(this.getNeighbor(codeEle, 1));
+
+    return {
+      minLng,
+      maxLng,
+      minLat,
+      maxLat,
+      minEle,
+      maxEle
+    };
+  }
+
+  /**
+   * 通过线获取相交的网格码
+   * @param polyline 线的经纬度和高程坐标数组
+   * @param level 编码层级
+   * @returns 相交的网格码数组
+   */
+  static getIntersectingGridsByPolyline(polyline: LngLatEle[], level = 10): string[] {
+    const polyline2D = polyline.map(point => ({
+      lngDegree: point.lngDegree,
+      latDegree: point.latDegree
+    }));
+    const grids2D = Codec2D.getIntersectingGridsByPolyline(polyline2D, level);
+
+    const minEle = Math.min(...polyline.map(point => point.elevation));
+    const maxEle = Math.max(...polyline.map(point => point.elevation));
+
+    const grids3D: string[] = [];
+    for (const grid2D of grids2D) {
+      const codeEle = this.encodeElevation(minEle);
+      const grid3D = grid2D + codeEle;
+      const gridInfo = this.getGridInfo(grid3D);
+      if (minEle <= gridInfo.maxEle && maxEle >= gridInfo.minEle) {
+        grids3D.push(grid3D);
+      }
+    }
+    return grids3D;
+  }
+
+  /**
+   * 通过面获取相交的网格码
+   * @param polygon 面的经纬度和高程坐标数组
+   * @param level 编码层级
+   * @returns 相交的网格码数组
+   */
+  static getIntersectingGridsByPolygon(polygon: LngLatEle[], level = 10): string[] {
+    const polygon2D = polygon.map(point => ({
+      lngDegree: point.lngDegree,
+      latDegree: point.latDegree
+    }));
+    const grids2D = Codec2D.getIntersectingGridsByPolygon(polygon2D, level);
+
+    const minEle = Math.min(...polygon.map(point => point.elevation));
+    const maxEle = Math.max(...polygon.map(point => point.elevation));
+
+    const grids3D: string[] = [];
+    for (const grid2D of grids2D) {
+      const codeEle = this.encodeElevation(minEle);
+      const grid3D = grid2D + codeEle;
+      const gridInfo = this.getGridInfo(grid3D);
+      if (minEle <= gridInfo.maxEle && maxEle >= gridInfo.minEle) {
+        grids3D.push(grid3D);
+      }
+    }
+    return grids3D;
+  }
 }
 
 export default Codec3D;
