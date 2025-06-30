@@ -15,6 +15,32 @@ import {
 
 class Codec2D {
   /**
+   * 通过网格码 ID 获取网格信息
+   * @param code 网格码 ID
+   * @returns 网格信息，包括宽、高、最大经纬度、最小经纬度
+   */
+  static getGridInfo(code: string): {
+    minLng: number;
+    maxLng: number;
+    minLat: number;
+    maxLat: number;
+  } {
+    const level = this.getCodeLevel(code);
+    const [southwest, northeast] = this.getReferRange(code);
+
+    const minLng = southwest.lngDegree;
+    const maxLng = northeast.lngDegree;
+    const minLat = southwest.latDegree;
+    const maxLat = northeast.latDegree;
+
+    return {
+      minLng,
+      maxLng,
+      minLat,
+      maxLat
+    };
+  }
+  /**
    * 对一个经纬度坐标编码
    * @param lngLat 经纬度坐标，可以写小数形式（正负号表示方向），也可以写度分秒形式（均为正数，direction字段表示方向）
    * @param level 要编码到第几级，默认为10
@@ -471,7 +497,7 @@ class Codec2D {
   static getReferRange(code: string): [LngLat, LngLat] {
     const level = this.getCodeLevel(code);
     if (level < 5) {
-      throw new Error("参照网格编码必须大于等于5级");
+      //throw new Error("参照网格编码必须大于等于5级");
     }
     const lngLat = this.decode(code, { form: "dms" });
     const lngLatInSecond = this.getSecond(lngLat);
@@ -796,6 +822,178 @@ class Codec2D {
         (lngLat.latSecond ??= 0)) *
       ((lngLat.latDirection ?? "N") === "S" ? -1 : 1);
     return [lngInSec, latInSec];
+  }
+  /**
+   * 通过线获取相交的网格码
+   * @param polyline 线的经纬度坐标数组
+   * @param level 编码层级
+   * @returns 相交的网格码数组
+   */
+  static getIntersectingGridsByPolyline(polyline: LngLat[], level = 10): string[] {
+    const minLng = Math.min(...polyline.map(point => point.lngDegree));
+    const maxLng = Math.max(...polyline.map(point => point.lngDegree));
+    const minLat = Math.min(...polyline.map(point => point.latDegree));
+    const maxLat = Math.max(...polyline.map(point => point.latDegree));
+
+    const grids: string[] = [];
+    for (let lng = minLng; lng < maxLng; lng += this.getGridSizeAtLevel(level).width) {
+      for (let lat = minLat; lat < maxLat; lat += this.getGridSizeAtLevel(level).height) {
+        const gridCode = this.encode({ lngDegree: lng, latDegree: lat }, level);
+        const gridInfo = this.getGridInfo(gridCode);
+        if (this.isPolylineIntersectingGrid(polyline, gridInfo)) {
+          grids.push(gridCode);
+        }
+      }
+    }
+    return grids;
+  }
+
+  /**
+   * 通过面获取相交的网格码
+   * @param polygon 面的经纬度坐标数组
+   * @param level 编码层级
+   * @returns 相交的网格码数组
+   */
+  static getIntersectingGridsByPolygon(polygon: LngLat[], level = 10): string[] {
+    const minLng = Math.min(...polygon.map(point => point.lngDegree));
+    const maxLng = Math.max(...polygon.map(point => point.lngDegree));
+    const minLat = Math.min(...polygon.map(point => point.latDegree));
+    const maxLat = Math.max(...polygon.map(point => point.latDegree));
+
+    const grids: string[] = [];
+    for (let lng = minLng; lng < maxLng; lng += this.getGridSizeAtLevel(level).width) {
+      for (let lat = minLat; lat < maxLat; lat += this.getGridSizeAtLevel(level).height) {
+        const gridCode = this.encode({ lngDegree: lng, latDegree: lat }, level);
+        const gridInfo = this.getGridInfo(gridCode);
+        if (this.isPolygonIntersectingGrid(polygon, gridInfo)) {
+          grids.push(gridCode);
+        }
+      }
+    }
+    return grids;
+  }
+
+  /**
+   * 判断线是否与网格相交
+   * @param polyline 线的经纬度坐标数组
+   * @param gridInfo 网格信息
+   * @returns 是否相交
+   */
+  private static isPolylineIntersectingGrid(polyline: LngLat[], gridInfo: {
+    minLng: number;
+    maxLng: number;
+    minLat: number;
+    maxLat: number;
+  }): boolean {
+    for (let i = 0; i < polyline.length - 1; i++) {
+      const start = polyline[i];
+      const end = polyline[i + 1];
+      if (this.isLineIntersectingRectangle(start, end, gridInfo)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * 判断面是否与网格相交
+   * @param polygon 面的经纬度坐标数组
+   * @param gridInfo 网格信息
+   * @returns 是否相交
+   */
+  private static isPolygonIntersectingGrid(polygon: LngLat[], gridInfo: {
+    minLng: number;
+    maxLng: number;
+    minLat: number;
+    maxLat: number;
+  }): boolean {
+    for (let i = 0; i < polygon.length; i++) {
+      const start = polygon[i];
+      const end = polygon[(i + 1) % polygon.length];
+      if (this.isLineIntersectingRectangle(start, end, gridInfo)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * 判断线段是否与矩形相交
+   * @param start 线段起点
+   * @param end 线段终点
+   * @param rectangle 矩形信息
+   * @returns 是否相交
+   */
+  private static isLineIntersectingRectangle(start: LngLat, end: LngLat, rectangle: {
+    minLng: number;
+    maxLng: number;
+    minLat: number;
+    maxLat: number;
+  }): boolean {
+    const rectCorners = [
+      { lngDegree: rectangle.minLng, latDegree: rectangle.minLat },
+      { lngDegree: rectangle.maxLng, latDegree: rectangle.minLat },
+      { lngDegree: rectangle.maxLng, latDegree: rectangle.maxLat },
+      { lngDegree: rectangle.minLng, latDegree: rectangle.maxLat }
+    ];
+
+    for (let i = 0; i < 4; i++) {
+      const rectStart = rectCorners[i];
+      const rectEnd = rectCorners[(i + 1) % 4];
+      if (this.isLineIntersectingLine(start, end, rectStart, rectEnd)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * 判断两条线段是否相交
+   * @param start1 线段 1 起点
+   * @param end1 线段 1 终点
+   * @param start2 线段 2 起点
+   * @param end2 线段 2 终点
+   * @returns 是否相交
+   */
+  private static isLineIntersectingLine(start1: LngLat, end1: LngLat, start2: LngLat, end2: LngLat): boolean {
+    const orientation1 = this.getOrientation(start1, end1, start2);
+    const orientation2 = this.getOrientation(start1, end1, end2);
+    const orientation3 = this.getOrientation(start2, end2, start1);
+    const orientation4 = this.getOrientation(start2, end2, end1);
+
+    if (orientation1 !== orientation2 && orientation3 !== orientation4) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * 获取三点的方向
+   * @param p 点 1
+   * @param q 点 2
+   * @param r 点 3
+   * @returns 方向
+   */
+  private static getOrientation(p: LngLat, q: LngLat, r: LngLat): number {
+    const val = (q.latDegree - p.latDegree) * (r.lngDegree - q.lngDegree) -
+      (q.lngDegree - p.lngDegree) * (r.latDegree - q.latDegree);
+
+    if (val === 0) return 0;
+    return (val > 0) ? 1 : 2;
+  }
+
+  /**
+   * 获取指定层级的网格大小
+   * @param level 层级
+   * @returns 网格大小
+   */
+  private static getGridSizeAtLevel(level: number): { width: number; height: number } {
+    const [widthInSec, heightInSec] = gridSizes1[level];
+    const width = widthInSec / 3600;
+    const height = heightInSec / 3600;
+    return { width, height };
   }
 }
 
